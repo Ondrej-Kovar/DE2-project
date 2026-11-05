@@ -41,27 +41,33 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 |---|---|---|---|
 | **Raspberry Pi Pico W** | RP2040 microcontroller with 2.4 GHz Wi-Fi | Core controller | 5 V (VBUS) / 3.3 V logic |
 | **BME280** | Temperature, Relative Humidity, Pressure sensor | I2C (SDA/SCL) | 3.3 V |
-| **Display** | 1.3" OLED (SH1106, 128x64) | I2C  | 3.3 V |
-| **Actuator** | 12 V DC ventilation fan | PWM / Digital switching | External DC supply |
-| **Actuator Driver** | N-channel MOSFET (e.g. 2N7000 / IRLZ44N) or BJT (2N2222) + flyback diode | Digital GPIO | - |
-| **Input Controls** | Rotary Encoder (KY-040) with switch | Digital GPIO (pull-up) | 3.3 V |
-| **Status Indicator** | RGB LED with current-limiting resistors | GPIO / PWM | 3.3 V  |
-| **Light supply** | LED strip | Analog (ADC0 / GP26) | 5 V |
+| **Photoresistor (LDR)** | Ambient light sensor in voltage divider circuit (with 10 kΩ resistor) | Analog (ADC0 / GP26) | 3.3 V |
+| **Display** | 1.3" OLED (SH1106 driver, 128x64 px) | I2C (SDA/SCL) | 3.3 V |
+| **Actuator (Fan)** | 12 V DC ventilation / extraction fan | PWM / Digital switching via MOSFET | External 12 V DC supply |
+| **Actuator (Light)** | 5 V DC LED lighting strip (grow / white light) | PWM / Digital switching via MOSFET | External 5 V DC supply |
+| **Power Drivers** | 2x N-channel logic-level MOSFET (e.g. IRLZ44N, 2N7000 or AO3400) + flyback diode for inductive fan load | Digital GPIO / PWM | - |
+| **Input Controls** | Rotary Encoder (KY-040) with integrated push-button | 3x Digital GPIO (internal/external pull-up) | 3.3 V |
+| **Status Indicator** | Common cathode/anode RGB LED with current-limiting resistors (e.g. 220–330 Ω) | 3x GPIO / PWM | 3.3 V |
 
 ### Pinout & Wiring Plan
 > [!IMPORTANT]
-> The Raspberry Pi Pico W uses **3.3 V logic**. Never connect a 5 V or 12 V fan directly to GPIO pins. Always use a driver circuit with a shared common ground (GND).
+> The Raspberry Pi Pico W uses **3.3 V logic**. Never connect 5 V or 12 V loads directly to GPIO pins. Always use a driver circuit (MOSFET/transistor) with a shared common ground (GND) across all power sources.
 
-| Pico W Pin | Function | Connected Module & Pin | Notes / Description |
+| Pico W Pin | Pin Name / Function | Connected Module & Pin | Notes / Description |
 |---|---|---|---|
-| **GP0** | I2C0 SDA | BME280 & OLED SDA | Shared I2C0 bus data line |
-| **GP1** | I2C0 SCL | BME280 & OLED SCL | Shared I2C0 bus clock line |
-| **GP14** | GPIO Output | Fan Driver Gate / Base | Triggers transistor/MOSFET to power fan |
-| **GP16** | GPIO Input | Button 1 (Threshold +) | Internal/External Pull-up |
-| **GP17** | GPIO Input | Button 2 (Threshold -) | Internal/External Pull-up |
-| **GP18** | GPIO Output | NeoPixel / Status LED | Visual alert for fan active / threshold warning |
-| **3V3 (Pin 36)** | Power | 3.3 V rail | Powers BME280, OLED |
-| **GND (Pin 38)** | Ground | Common Ground | Common GND between Pico and external power supply |
+| **GP0 (Pin 1)** | I2C0 SDA | BME280 SDA & SH1106 OLED SDA | Shared I2C0 bus data line (pull-up resistors) |
+| **GP1 (Pin 2)** | I2C0 SCL | BME280 SCL & SH1106 OLED SCL | Shared I2C0 bus clock line |
+| **GP14 (Pin 19)** | GPIO / PWM Output | Fan Driver Gate (MOSFET) | Switched 12 V ventilation fan control |
+| **GP15 (Pin 20)** | GPIO / PWM Output | Light Driver Gate (MOSFET) | Switched 5 V LED strip lighting control |
+| **GP16 (Pin 21)** | GPIO Input | KY-040 Encoder CLK (A) | Direction & step detection (Pull-up) |
+| **GP17 (Pin 22)** | GPIO Input | KY-040 Encoder DT (B) | Direction & step detection (Pull-up) |
+| **GP18 (Pin 24)** | GPIO Input | KY-040 Encoder SW (Switch) | Menu select / mode change button (Pull-up) |
+| **GP20 (Pin 26)** | GPIO / PWM Output | RGB LED - Red Channel | Current limiting resistor ~220 Ω |
+| **GP21 (Pin 27)** | GPIO / PWM Output | RGB LED - Green Channel | Current limiting resistor ~330 Ω |
+| **GP22 (Pin 29)** | GPIO / PWM Output | RGB LED - Blue Channel | Current limiting resistor ~330 Ω |
+| **GP26 (Pin 31)** | ADC0 Analog Input | Photoresistor (LDR) divider | Ambient light level measurement (0–3.3 V) |
+| **3V3 (Pin 36)** | Power Output | 3.3 V Power Rail | Powers BME280, SH1106 OLED, KY-040, and LDR divider |
+| **GND (Pin 38)** | Common Ground | System Ground (GND) | Shared common ground with external 12 V / 5 V power supplies |
 
 ---
 
@@ -71,26 +77,26 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 
 ```mermaid
 flowchart TD
-    subgraph Inputs ["Inputs"]
-        S1["BME280 Sensor<br>(Temp, Hum, Press)"] -->|I2C| MCU["Raspberry Pi Pico W<br>(MicroPython)"]
-        BTN["Buttons / Encoder<br>(Threshold adjust)"] -->|GPIO| MCU
-        SOIL["Soil Moisture Sensor<br>(Optional)"] -.->|ADC| MCU
+    subgraph Inputs ["Inputs & Sensors"]
+        S1["BME280 Sensor<br>(Temp, Humidity, Pressure)"] -->|I2C0 (GP0/GP1)| MCU["Raspberry Pi Pico W<br>(MicroPython)"]
+        LDR["Photoresistor (LDR)<br>Voltage Divider"] -->|ADC0 (GP26)| MCU
+        ENC["KY-040 Rotary Encoder<br>(CLK, DT, SW)"] -->|GPIO (GP16/17/18)| MCU
     end
 
     subgraph CoreLogic ["Pico W Application Core (uasyncio)"]
-        MCU --> SENS_TASK["Sensor Read Task<br>(every 500 ms)"]
-        MCU --> CTRL_TASK["Climate Control Logic<br>(Threshold evaluation)"]
-        MCU --> DISP_TASK["Display Task<br>(every 200 ms)"]
-        MCU --> INP_TASK["Input Debounce Task<br>(every 30 ms)"]
-        MCU -.-> NET_TASK["MQTT / Wi-Fi Task<br>(every 15 s)"]
+        MCU --> SENS_TASK["Sensor Read Task<br>(BME280 & LDR sampling)"]
+        MCU --> INP_TASK["Input Task<br>(Encoder & button debounce)"]
+        MCU --> CTRL_TASK["Climate & Light Control<br>(Thresholds & Hysteresis)"]
+        MCU --> DISP_TASK["Display Task<br>(SH1106 OLED refresh)"]
+        MCU -.-> NET_TASK["Telemetry Task<br>(Wi-Fi / MQTT publish)"]
     end
 
-    subgraph Outputs ["Outputs"]
-        CTRL_TASK -->|GPIO Trigger| DRV["Transistor / MOSFET Driver"]
-        DRV --> FAN["Ventilation Fan"]
-        DISP_TASK -->|I2C / SPI| DISP["OLED / Nokia Display"]
-        CTRL_TASK -->|PWM / GPIO| LED["Status RGB / NeoPixel"]
-        NET_TASK -.->|Wi-Fi| BROKER["MQTT Broker / Dashboard"]
+    subgraph Outputs ["Outputs & Actuators"]
+        CTRL_TASK -->|GP14 PWM| DRV_FAN["MOSFET Driver"] --> FAN["12 V Ventilation Fan"]
+        CTRL_TASK -->|GP15 PWM| DRV_LED["MOSFET Driver"] --> STRIP["5 V LED Lighting Strip"]
+        CTRL_TASK -->|GP20-22 PWM| RGB["RGB Status LED"]
+        DISP_TASK -->|I2C0 (GP0/GP1)| OLED["1.3' SH1106 OLED"]
+        NET_TASK -.->|Wi-Fi 2.4 GHz| BROKER["Cloud / Local MQTT Broker"]
     end
 ```
 
@@ -98,15 +104,15 @@ flowchart TD
 
 ## ⏱️ Timing & Concurrency Plan
 
-To keep the system interactive without freezing user input, the software employs cooperative multitasking using MicroPython's **`uasyncio`**:
+To keep the system responsive without blocking user input or display updates, the software employs cooperative multitasking using MicroPython's **`uasyncio`**:
 
 | Task Name | Interval / Trigger | Priority / Type | Responsibility |
 |---|---|---|---|
-| `task_inputs` | 20–40 ms | High (Async task) | Scans and debounces button presses / encoder rotation; updates threshold variables. |
-| `task_sensors` | 500–1000 ms | Medium (Async task) | Reads raw values from BME280, validates measurement ranges, handles bus errors. |
-| `task_control` | 500 ms | Medium (Async task) | Compares current temperature/humidity with setpoint; drives fan output via hysteresis. |
-| `task_display` | 200–250 ms | Low/Medium (Async task) | Updates OLED display buffer with latest values and fan status icon. |
-| `task_telemetry` | 15–30 s | Background (Optional) | Transmits JSON payloads over Wi-Fi; implements non-blocking reconnection. |
+| `task_inputs` | 10–25 ms | High (Async task) | Continuously monitors and debounces rotary encoder (CLK, DT) and button (SW); adjusts menu and threshold values. |
+| `task_sensors` | 500–1000 ms | Medium (Async task) | Reads raw values from BME280 via I2C and ambient light level from LDR via ADC0; validates sensor ranges. |
+| `task_control` | 500 ms | Medium (Async task) | Evaluates climate conditions (fan control with hysteresis) and ambient light (LED strip control). Updates RGB LED indicator. |
+| `task_display` | 150–250 ms | Low/Medium (Async task) | Updates SH1106 OLED frame buffer with current readings, threshold setpoints, and fan/light status icons. |
+| `task_telemetry` | 15–30 s | Background (Optional) | Formats JSON telemetry payload and publishes to MQTT broker via Wi-Fi; handles network reconnects non-blockingly. |
 
 ---
 
