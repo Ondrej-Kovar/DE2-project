@@ -29,8 +29,8 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 2. Provides a local visual interface (**OLED display & RGB status LED**) showing live measurements and system status.
 3. Allows users to configure temperature and humidity setpoints (thresholds) using physical inputs (**rotary encoder**).
 4. Automatically activates an extraction fan via a transistor/MOSFET driver when conditions exceed target thresholds.
-5. Automatically turns on light to ensure better growth
-6. Transmits telemetry data over Wi-Fi via MQTT.
+5. Automatically turns on light after sunset to ensure constant growth
+6. Transmits telemetry data over Wi-Fi.
 
 ---
 
@@ -41,12 +41,12 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 |---|---|---|---|
 | **Raspberry Pi Pico W** | RP2040 microcontroller with 2.4 GHz Wi-Fi | Core controller | 5 V (VBUS) / 3.3 V logic |
 | **BME280** | Temperature, Relative Humidity, Pressure sensor | I2C (SDA/SCL) | 3.3 V |
-| **Display** | 1.3" OLED (SH1106, 128x64) * | I2C  | 3.3 V |
-| **Actuator** | 12 V DC ventilation fan | PWM / Digital switching | External DC supply / 3.3 V |
+| **Display** | 1.3" OLED (SH1106, 128x64) | I2C  | 3.3 V |
+| **Actuator** | 12 V DC ventilation fan | PWM / Digital switching | External DC supply |
 | **Actuator Driver** | N-channel MOSFET (e.g. 2N7000 / IRLZ44N) or BJT (2N2222) + flyback diode | Digital GPIO | - |
 | **Input Controls** | Rotary Encoder (KY-040) with switch | Digital GPIO (pull-up) | 3.3 V |
 | **Status Indicator** | RGB LED with current-limiting resistors | GPIO / PWM | 3.3 V  |
-| **Light supply** | LED strip | Analog (ADC0 / GP26) | 3.3 V |
+| **Light supply** | LED strip | Analog (ADC0 / GP26) | 5 V |
 
 ### Pinout & Wiring Plan
 > [!IMPORTANT]
