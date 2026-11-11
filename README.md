@@ -1,5 +1,7 @@
 # Smart Greenhouse Monitor (Raspberry Pi Pico W)
 
+# Smart Greenhouse Monitor (Raspberry Pi Pico W)
+
 [![MicroPython](https://img.shields.io/badge/MicroPython-1.22+-blue.svg)](https://micropython.org/)
 [![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%20Pico%20W-red.svg)](https://www.raspberrypi.com/products/raspberry-pi-pico-w/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -8,17 +10,17 @@ Embedded systems term project for the **Digital Electronics 2 (DE2)** course at 
 
 ---
 
-## 👥 Team Members & Responsibilities
+## Team Members & Responsibilities
 
-| Name | Role / Focus Area | Key Contributions |
-|---|---|---|
-| **Adam Koutný** |  |  |
-| **Ondřej Kovář** |  |  |
-| **Richard Královský** |  |  |
+| Name | Responsibilities |
+|---|---|
+| **Adam Koutný** | Block diagram, Wiring diagram, BME sensor, LED display|
+| **Ondřej Kovář** | Encoder, Drivers, Main Code |
+| **Richard Královský** | Led strip control, Wi-Fi data transmission, Main Code |
 
 ---
 
-## 📖 Project Overview
+## Project Overview
 
 ### Problem Statement
 Maintaining an optimal microclimate inside a greenhouse is essential for healthy plant growth. Sudden temperature spikes or excessive humidity can damage crops or lead to mold and fungal infections. Manual monitoring is time-consuming and often responds too late.
@@ -30,75 +32,52 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 3. Allows users to configure temperature and humidity setpoints (thresholds) using physical inputs (**rotary encoder**).
 4. Automatically activates an extraction fan via a transistor/MOSFET driver when conditions exceed target thresholds.
 5. Automatically turns on light after sunset to ensure constant growth
-6. Transmits telemetry data over Wi-Fi.
+6. Transmits telemetry data over Wi-Fi to ThingSpeak.
 
 ---
 
-## 🛠️ Hardware Inventory & Wiring
+## Hardware Inventory & Wiring
 
 ### Bill of Materials (BOM)
 | Component | Description / Specifications | Interface / Protocol | Supply Voltage |
 |---|---|---|---|
 | **Raspberry Pi Pico W** | RP2040 microcontroller with 2.4 GHz Wi-Fi | Core controller | 5 V (VBUS) / 3.3 V logic |
 | **BME280** | Temperature, Relative Humidity, Pressure sensor | I2C (SDA/SCL) | 3.3 V |
-| **Photoresistor (LDR)** | Ambient light sensor in voltage divider circuit (with 10 kΩ resistor) | Analog (ADC0 / GP26) | 3.3 V |
+| **Light Sensor (LDR)** | Ambient light sensor in voltage divider circuit (LDR + 10 kΩ resistor) | Analog (ADC0 / GP26) | 3.3 V |
 | **Display** | 1.3" OLED (SH1106 driver, 128x64 px) | I2C (SDA/SCL) | 3.3 V |
 | **Actuator (Fan)** | 12 V DC ventilation / extraction fan | PWM / Digital switching via MOSFET | External 12 V DC supply |
 | **Actuator (Light)** | 5 V DC LED lighting strip (grow / white light) | PWM / Digital switching via MOSFET | External 5 V DC supply |
-| **Power Drivers** | 2x N-channel logic-level MOSFET (e.g. IRLZ44N, 2N7000 or AO3400) + flyback diode for inductive fan load | Digital GPIO / PWM | - |
+| **Power Driver** | N-channel logic-level MOSFET (e.g. IRLZ44N, 2N7000 or AO3400) + flyback diode for inductive fan load | Digital GPIO / PWM | - |
 | **Input Controls** | Rotary Encoder (KY-040) with integrated push-button | 3x Digital GPIO (internal/external pull-up) | 3.3 V |
+| **External power supply 5V, 12V** | External DC power adapters for the LED strip (5 V) and extraction fan (12 V) | Power rails / DC jack | 5 V / 12 V |
 | **Status Indicator** | Common cathode/anode RGB LED with current-limiting resistors (e.g. 220–330 Ω) | 3x GPIO / PWM | 3.3 V |
 
 ### Pinout & Wiring Plan
-> [!IMPORTANT]
-> The Raspberry Pi Pico W uses **3.3 V logic**. Never connect 5 V or 12 V loads directly to GPIO pins. Always use a driver circuit (MOSFET/transistor) with a shared common ground (GND) across all power sources.
 
 | Pico W Pin | Pin Name / Function | Connected Module & Pin | Notes / Description |
 |---|---|---|---|
-| **GP0 (Pin 1)** | I2C0 SDA | BME280 SDA & SH1106 OLED SDA | Shared I2C0 bus data line (pull-up resistors) |
-| **GP1 (Pin 2)** | I2C0 SCL | BME280 SCL & SH1106 OLED SCL | Shared I2C0 bus clock line |
-| **GP14 (Pin 19)** | GPIO / PWM Output | Fan Driver Gate (MOSFET) | Switched 12 V ventilation fan control |
-| **GP15 (Pin 20)** | GPIO / PWM Output | Light Driver Gate (MOSFET) | Switched 5 V LED strip lighting control |
-| **GP16 (Pin 21)** | GPIO Input | KY-040 Encoder CLK (A) | Direction & step detection (Pull-up) |
-| **GP17 (Pin 22)** | GPIO Input | KY-040 Encoder DT (B) | Direction & step detection (Pull-up) |
-| **GP18 (Pin 24)** | GPIO Input | KY-040 Encoder SW (Switch) | Menu select / mode change button (Pull-up) |
-| **GP20 (Pin 26)** | GPIO / PWM Output | RGB LED - Red Channel | Current limiting resistor ~220 Ω |
-| **GP21 (Pin 27)** | GPIO / PWM Output | RGB LED - Green Channel | Current limiting resistor ~330 Ω |
-| **GP22 (Pin 29)** | GPIO / PWM Output | RGB LED - Blue Channel | Current limiting resistor ~330 Ω |
-| **GP26 (Pin 31)** | ADC0 Analog Input | Photoresistor (LDR) divider | Ambient light level measurement (0–3.3 V) |
-| **3V3 (Pin 36)** | Power Output | 3.3 V Power Rail | Powers BME280, SH1106 OLED, KY-040, and LDR divider |
-| **GND (Pin 38)** | Common Ground | System Ground (GND) | Shared common ground with external 12 V / 5 V power supplies |
+| **GP2** | GPIO Input | KY-040 Encoder CLK (A) | Direction & step detection (Pull-up) |
+| **GP3** | GPIO Input | KY-040 Encoder DT (B) | Direction & step detection (Pull-up) |
+| **GP4** | I2C0 SDA | BME280 SDA & SH1106 OLED SDA | Shared I2C0 bus data line (pull-up resistors) |
+| **GP5** | I2C0 SCL | BME280 SCL & SH1106 OLED SCL | Shared I2C0 bus clock line |
+| **GP12** | GPIO Input | KY-040 Encoder SW (Switch) | Menu select / mode change button (Pull-up) |
+| **GP14** | GPIO / PWM Output | LED Strip Data | Switched 5 V LED strip lighting control |
+| **GP15** | GPIO / PWM Output | Fan Driver Gate (MOSFET) | Switched 12 V ventilation fan control |
+| **GP26** | ADC0 Analog Input | Photoresistor (LDR) divider | Ambient light level measurement (0–3.3 V) |
+| **3V3** | Power Output | 3.3 V Power Rail | Powers BME280, SH1106 OLED, KY-040, and LDR divider |
+| **5V** | External Power Supply | LED Strip VCC (+5V) | Dedicated external power for the 5 V LED strip lighting |
+| **12V** | External Power Supply | Actuator (Fan) VCC (+12V) | Dedicated external power for the 12 V ventilation fan |
+| **GND** | Common Ground | System Ground (GND) | Shared common ground for Pico, 3.3 V, 5 V, and 12 V circuits |
 
 ---
 
-## 🏗️ System Architecture & Design
+## System Architecture & Design
 
 ### Block Diagram
+![Block Diagram](docs/Images/Block_diagram.png)
 
-```mermaid
-flowchart TD
-    subgraph Inputs ["Inputs & Sensors"]
-        S1["BME280 Sensor<br>(Temp, Humidity, Pressure)"] -->|I2C0 (GP0/GP1)| MCU["Raspberry Pi Pico W<br>(MicroPython)"]
-        LDR["Photoresistor (LDR)<br>Voltage Divider"] -->|ADC0 (GP26)| MCU
-        ENC["KY-040 Rotary Encoder<br>(CLK, DT, SW)"] -->|GPIO (GP16/17/18)| MCU
-    end
-
-    subgraph CoreLogic ["Pico W Application Core (uasyncio)"]
-        MCU --> SENS_TASK["Sensor Read Task<br>(BME280 & LDR sampling)"]
-        MCU --> INP_TASK["Input Task<br>(Encoder & button debounce)"]
-        MCU --> CTRL_TASK["Climate & Light Control<br>(Thresholds & Hysteresis)"]
-        MCU --> DISP_TASK["Display Task<br>(SH1106 OLED refresh)"]
-        MCU -.-> NET_TASK["Telemetry Task<br>(Wi-Fi / MQTT publish)"]
-    end
-
-    subgraph Outputs ["Outputs & Actuators"]
-        CTRL_TASK -->|GP14 PWM| DRV_FAN["MOSFET Driver"] --> FAN["12 V Ventilation Fan"]
-        CTRL_TASK -->|GP15 PWM| DRV_LED["MOSFET Driver"] --> STRIP["5 V LED Lighting Strip"]
-        CTRL_TASK -->|GP20-22 PWM| RGB["RGB Status LED"]
-        DISP_TASK -->|I2C0 (GP0/GP1)| OLED["1.3' SH1106 OLED"]
-        NET_TASK -.->|Wi-Fi 2.4 GHz| BROKER["Cloud / Local MQTT Broker"]
-    end
-```
+### Wiring Diagram
+![Wiring Diagram](docs/Images/Wiring.png)
 
 ---
 
@@ -116,7 +95,8 @@ To keep the system responsive without blocking user input or display updates, th
 
 ---
 
-## 📁 Repository Structure
+
+## Repository Structure
 
 ```text
 ├── docs/                       # Sphinx documentation source files
@@ -141,11 +121,9 @@ To keep the system responsive without blocking user input or display updates, th
 │   └── video_link.txt          # Link to 1-2 min demonstration video
 ├── LICENSE                     # License file (e.g. MIT)
 └── README.md                   # This project report & documentation
-```
-
 ---
 
-## 🚀 Setup & Installation Instructions
+## Setup & Installation Instructions
 
 ### Prerequisites
 1. **Raspberry Pi Pico W** flashed with the latest MicroPython firmware (v1.22 or newer).
@@ -162,9 +140,8 @@ To keep the system responsive without blocking user input or display updates, th
 
 ---
 
-## 🧪 Testing & Verification
+## Testing & Verification
 
-Document your component verification steps and measured results below:
 
 ### 1. Sensor Verification (BME280)
 - **Measurement Range Tested:** Temp [°C], Humidity [%RH], Pressure [hPa].
@@ -181,7 +158,7 @@ Document your component verification steps and measured results below:
 
 ---
 
-## 📚 Sphinx Documentation
+## Sphinx Documentation
 
 The project includes Sphinx documentation for all custom driver classes and public APIs.
 
@@ -195,15 +172,15 @@ View the generated output in `docs/_build/html/index.html`.
 
 ---
 
-## 🎥 Presentation & Deliverables
+## Presentation & Deliverables
 
 - **Project Poster (A3):** [Link to Poster PDF](presentation/poster.pdf) *(TODO: Add link)*
 - **Demo Video (1–2 minutes):** [YouTube / Video Link](https://youtube.com/...) *(TODO: Add video URL)*
 
 ---
 
-## 📜 References & Acknowledgments
+## References & Acknowledgments
 
 - MicroPython documentation: [https://docs.micropython.org/](https://docs.micropython.org/)
 - Raspberry Pi Pico W documentation: [https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html)
-- Course lab exercises & inspiration: [BUT FEEC DE2 MicroPython Labs](https://github.com/tomas-fryza/esp-micropython)
+- Course lab exercises: [BUT FEEC DE2 MicroPython Labs](https://github.com/tomas-fryza/esp-micropython)
