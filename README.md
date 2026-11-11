@@ -50,7 +50,7 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 | **Power Driver** | N-channel logic-level MOSFET (e.g. IRLZ44N, 2N7000 or AO3400) + flyback diode for inductive fan load | Digital GPIO / PWM | - |
 | **Input Controls** | Rotary Encoder (KY-040) with integrated push-button | 3x Digital GPIO (internal/external pull-up) | 3.3 V |
 | **External power supply 5V, 12V** | External DC power adapters for the LED strip (5 V) and extraction fan (12 V) | Power rails / DC jack | 5 V / 12 V |
-| **Status Indicator** | Common cathode/anode RGB LED with current-limiting resistors (e.g. 220–330 Ω) | 3x GPIO / PWM | 3.3 V |
+<!--| **Status Indicator** | Common cathode/anode RGB LED with current-limiting resistors (e.g. 220–330 Ω) | 3x GPIO / PWM | 3.3 V |-->
 
 ### Pinout & Wiring Plan
 
@@ -79,7 +79,7 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 ### Wiring Diagram
 ![Wiring Diagram](docs/Images/Wiring.png)
 
-```
+<!--
 ## Timing & Concurrency Plan
 
 To keep the system responsive without blocking user input or display updates, the software employs cooperative multitasking using MicroPython's **`uasyncio`**:
@@ -93,7 +93,7 @@ To keep the system responsive without blocking user input or display updates, th
 | `task_telemetry` | 15–30 s | Background (Optional) | Formats JSON telemetry payload and publishes to MQTT broker via Wi-Fi; handles network reconnects non-blockingly. |
 
 ---
-```
+-->
 
 ## Repository Structure
 
@@ -104,7 +104,7 @@ text
 │   └── api/                    # Auto-generated or manual class documentation
 ├── Images/                     # Images
 │   ├── Block_diagram.png       
-│   ├── Wiring.png              
+│   └── Wiring.png              
 ├── src/                        # MicroPython production code
 │   ├── main.py                 # Application entry point & uasyncio task loop
 │   ├── config.py               # Hardware pin definitions & default thresholds
