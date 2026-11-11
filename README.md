@@ -14,7 +14,7 @@ Embedded systems term project for the **Digital Electronics 2 (DE2)** course at 
 
 | Name | Responsibilities |
 |---|---|
-| **Adam Koutný** | Block diagram, Wiring diagram, BME sensor, LED display|
+| **Adam Koutný** | Block diagram, Wiring diagram, BME sensor, LED display |
 | **Ondřej Kovář** | Encoder, Drivers, Main Code |
 | **Richard Královský** | Led strip control, Wi-Fi data transmission, Main Code |
 
@@ -80,7 +80,7 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 ![Wiring Diagram](docs/Images/Wiring.png)
 
 ```
-## ⏱️ Timing & Concurrency Plan
+## Timing & Concurrency Plan
 
 To keep the system responsive without blocking user input or display updates, the software employs cooperative multitasking using MicroPython's **`uasyncio`**:
 
@@ -102,6 +102,9 @@ text
 │   ├── conf.py                 # Sphinx configuration
 │   ├── index.rst               # Documentation root
 │   └── api/                    # Auto-generated or manual class documentation
+├── Images/                     # Images
+│   ├── Block_diagram.png       
+│   ├── Wiring.png              
 ├── src/                        # MicroPython production code
 │   ├── main.py                 # Application entry point & uasyncio task loop
 │   ├── config.py               # Hardware pin definitions & default thresholds
