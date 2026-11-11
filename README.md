@@ -94,8 +94,7 @@ To keep the system responsive without blocking user input or display updates, th
 -->
 
 ## Repository Structure
-
-text
+```text
 ├── docs/                       # Sphinx documentation source files
 │   ├── conf.py                 # Sphinx configuration
 │   ├── index.rst               # Documentation root
@@ -121,6 +120,7 @@ text
 │   └── video_link.txt          # Link to 1-2 min demonstration video
 ├── LICENSE                     # License file (e.g. MIT)
 └── README.md                   # This project report & documentation
+```
 ---
 
 ## Setup & Installation Instructions
