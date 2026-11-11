@@ -1,0 +1,19 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments & IDEs
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Sphinx documentation build output
+docs/_build/
+
+# Local configuration overrides with secrets (Wi-Fi passwords)
+secrets.py
+config_local.py

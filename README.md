@@ -79,8 +79,7 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 ### Wiring Diagram
 ![Wiring Diagram](docs/Images/Wiring.png)
 
----
-
+```
 ## ⏱️ Timing & Concurrency Plan
 
 To keep the system responsive without blocking user input or display updates, the software employs cooperative multitasking using MicroPython's **`uasyncio`**:
@@ -94,11 +93,11 @@ To keep the system responsive without blocking user input or display updates, th
 | `task_telemetry` | 15–30 s | Background (Optional) | Formats JSON telemetry payload and publishes to MQTT broker via Wi-Fi; handles network reconnects non-blockingly. |
 
 ---
-
+```
 
 ## Repository Structure
 
-```text
+text
 ├── docs/                       # Sphinx documentation source files
 │   ├── conf.py                 # Sphinx configuration
 │   ├── index.rst               # Documentation root
@@ -153,8 +152,6 @@ To keep the system responsive without blocking user input or display updates, th
 
 ### 3. Display Refresh Rate & Responsiveness
 - Verified non-blocking screen updates without stuttering input recognition.
-
-*(Insert photos, screenshots of serial console, or measurement graphs here)*
 
 ---
 
