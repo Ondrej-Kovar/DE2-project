@@ -75,30 +75,7 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 
 ### Block Diagram
 
-```mermaid
-flowchart TD
-    subgraph Inputs ["Inputs & Sensors"]
-        S1["BME280 Sensor<br>(Temp, Humidity, Pressure)"] -->|I2C0 (GP0/GP1)| MCU["Raspberry Pi Pico W<br>(MicroPython)"]
-        LDR["Photoresistor (LDR)<br>Voltage Divider"] -->|ADC0 (GP26)| MCU
-        ENC["KY-040 Rotary Encoder<br>(CLK, DT, SW)"] -->|GPIO (GP16/17/18)| MCU
-    end
-
-    subgraph CoreLogic ["Pico W Application Core (uasyncio)"]
-        MCU --> SENS_TASK["Sensor Read Task<br>(BME280 & LDR sampling)"]
-        MCU --> INP_TASK["Input Task<br>(Encoder & button debounce)"]
-        MCU --> CTRL_TASK["Climate & Light Control<br>(Thresholds & Hysteresis)"]
-        MCU --> DISP_TASK["Display Task<br>(SH1106 OLED refresh)"]
-        MCU -.-> NET_TASK["Telemetry Task<br>(Wi-Fi / MQTT publish)"]
-    end
-
-    subgraph Outputs ["Outputs & Actuators"]
-        CTRL_TASK -->|GP14 PWM| DRV_FAN["MOSFET Driver"] --> FAN["12 V Ventilation Fan"]
-        CTRL_TASK -->|GP15 PWM| DRV_LED["MOSFET Driver"] --> STRIP["5 V LED Lighting Strip"]
-        CTRL_TASK -->|GP20-22 PWM| RGB["RGB Status LED"]
-        DISP_TASK -->|I2C0 (GP0/GP1)| OLED["1.3' SH1106 OLED"]
-        NET_TASK -.->|Wi-Fi 2.4 GHz| BROKER["Cloud / Local MQTT Broker"]
-    end
-```
+![block diagram](./presentation/block_diagram.png)
 
 ---
 
