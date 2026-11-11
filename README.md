@@ -1,7 +1,5 @@
 # Smart Greenhouse Monitor (Raspberry Pi Pico W)
 
-# Smart Greenhouse Monitor (Raspberry Pi Pico W)
-
 [![MicroPython](https://img.shields.io/badge/MicroPython-1.22+-blue.svg)](https://micropython.org/)
 [![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%20Pico%20W-red.svg)](https://www.raspberrypi.com/products/raspberry-pi-pico-w/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -74,10 +72,10 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 ## System Architecture & Design
 
 ### Block Diagram
-![Block Diagram](docs/Images/Block_diagram.png)
+![Block Diagram](Images/Block_diagram.png)
 
 ### Wiring Diagram
-![Wiring Diagram](docs/Images/Wiring.png)
+![Wiring Diagram](Images/Wiring.png)
 
 <!--
 ## Timing & Concurrency Plan
