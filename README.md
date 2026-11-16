@@ -85,9 +85,9 @@ To accommodate the conservative 100 kHz I2C speed without blocking the 100 ms lo
 
 | Task Name | Interval / Trigger | Estimated Duration | Responsibility |
 |---|---|---|---|
-| `isr_encoder` | On pin change (IRQ) | **< 0.1 ms** (Microseconds) | Instantly captures rotary encoder rotation (CLK, DT) and button presses (SW) in the background. Sets `display_dirty` flag. |
-| `task_local_update` | Every 100 ms | **~ 10 ms** (logic only)<br>**~ 90–110 ms** (if OLED redraws) | Reads BME280 and LDR sensors, evaluates hysteresis logic for actuators. If data changed or the encoder was moved, it triggers an OLED redraw. |
-| `task_telemetry` | Every 20 seconds | **~ 1–3 s** (Up to 10s if reconnecting) | Formats environmental data and uploads it to ThingSpeak via Wi-Fi HTTP POST. *(Note: IRQs ensure encoder inputs are never lost during this blocking network request).* |
+| `isr_encoder` | On pin change (IRQ) | < 0.1 ms (Microseconds) | Instantly captures rotary encoder rotation (CLK, DT) and button presses (SW) in the background. Sets `display_dirty` flag. |
+| `task_local_update` | Every 100 ms | ~ 10 ms (logic only)<br> ~ 90–110 ms (if OLED redraws) | Reads BME280 and LDR sensors, evaluates hysteresis logic for actuators. If data changed or the encoder was moved, it triggers an OLED redraw. |
+| `task_telemetry` | Every 20 seconds | ~ 1–3 s (Up to 10 s if reconnecting) | Formats environmental data and uploads it to ThingSpeak via Wi-Fi HTTP POST. *(Note: IRQs ensure encoder inputs are never lost during this blocking network request).* |
 
 ---
 ### Execution Time Breakdown:
@@ -158,7 +158,7 @@ DE2-project
 - **Hysteresis control:** Fan turns ON when $T > T_{threshold}$ and OFF when $T < T_{threshold} - \Delta T$ to prevent rapid on/off oscillation.
 
 ### 3. Automated Light Control (LDR & LED Strip)
-- **Logic & Hysteresis validation:** Verified LDR voltage divider readings via ADC with a 10-sample averaging filter. Confirmed that the NeoPixel LED strip correctly toggles based on ambient light without flickering.
+- **Logic & Hysteresis validation:** Verified LDR voltage divider readings via ADC with a 10-sample averaging filter. Confirmed that the NeoPixel LED strip correctly toggles based on ambient light without flickering due to software hysteresis.
 - **Integration test:** Successfully validated hardware response and software logic using a dedicated test script (`test_LightControl.py`).
 
 ### 4. Display Refresh Rate & Responsiveness
