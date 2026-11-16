@@ -1,5 +1,6 @@
 """
 Standalone test script for LDR (photoresistor) analog sensor on ADC0 (GP26).
+Based on adc_read.py from DE2 course lab5
 """
 from machine import Pin, ADC
 import time

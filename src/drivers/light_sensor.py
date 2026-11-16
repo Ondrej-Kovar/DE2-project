@@ -4,7 +4,7 @@ Reads ambient light levels via an ADC pin connected to an LDR voltage divider.
 Applies software hysteresis and multi-sample averaging to determine the 
 required LED strip state without flickering.
 
-Based on optional task including LDR from LAB5-adc in DE2 course
+Based on optional task including LDR from LAB5 adc_read.py in DE2 course
 """
 # Vcc -> LDR -> 5 kOhm -> GND (for implemetation)
 

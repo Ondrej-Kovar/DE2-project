@@ -47,21 +47,21 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 | **LED Strip** | 3 V DC LED lighting strip (NeoPixel) | Digital data (via neopixel library) | External 3 V DC supply |
 | **Fan Driver** | N-channel logic-level MOSFET (e.g. IRLZ44N, 2N7000 or AO3400) + flyback diode for inductive fan load | Digital GPIO | - |
 | **Rotary Encoder** | Rotary Encoder (KY-040) with integrated push-button for input control | 3x Digital GPIO (internal pull-up) | 3.3 V |
-| **External power supply 3 V** | External DC power adapters for the LED strip (5 V) and extraction fan (12 V) | Power rails / DC jack | 3 V |
+| **External power supply 3 V** | External DC power adapters for the LED strip and extraction fan (3V) | Power rails / DC jack | 3 V |
 
 ### Pinout & Wiring Plan
 
 | Pico W Pin | Pin Name / Function | Connected Module & Pin | Notes / Description |
 |---|---|---|---|
-| **GP2** | GPIO Input | KY-040 Encoder CLK (A) | Direction & step detection (Pull-up) |
-| **GP3** | GPIO Input | KY-040 Encoder DT (B) | Direction & step detection (Pull-up) |
+| **GP2** | GPIO Input | Encoder CLK (A) | Direction & step detection (Pull-up) |
+| **GP3** | GPIO Input | Encoder DT (B) | Direction & step detection (Pull-up) |
 | **GP4** | I2C0 SDA | BME280 SDA & SH1106 OLED SDA | Shared I2C0 bus data line (pull-up resistors) |
 | **GP5** | I2C0 SCL | BME280 SCL & SH1106 OLED SCL | Shared I2C0 bus clock line |
-| **GP12** | GPIO Input | KY-040 Encoder SW (Switch) | Menu select / mode change button (Pull-up) |
-| **GP14** | GPIO | LED Strip Data | Switched 5 V LED strip lighting control |
+| **GP12** | GPIO Input | Encoder button (SW) | Threshold select button (Pull-up) |
+| **GP14** | GPIO | LED Strip Data | NeoPixel LED strip lighting control |
 | **GP15** | GPIO | Fan Driver Gate (MOSFET) | Switched 3 V ventilation fan control |
-| **GP26** | ADC0 Analog Input | Photoresistor (LDR) divider | Ambient light level measurement (0–3.3 V) |
-| **3V3** | Pico Power Output | 3.3 V Power Rail | Powers BME280, SH1106 OLED, KY-040, and LDR divider |
+| **GP26** | ADC0 Analog Input | Light Sensor | Ambient light level measurement (0–3.3 V) |
+| **3V3** | Pico Power Output | 3.3 V Power Rail | Powers BME280, SH1106 OLED, KY-040, and Light Sensor |
 | **3V** | External Power Supply | LED Strip and Fan VCC (+3V) | Dedicated external power for the 3 V LED strip lighting and fan |
 | **GND** | Common Ground | System Ground (GND) | Shared common ground for Pico, 3.3 V, 3 V external circuits |
 
@@ -196,4 +196,4 @@ View the generated output in `docs/_build/html/index.html`.
 - MicroPython documentation: [https://docs.micropython.org/](https://docs.micropython.org/)
 - NeoPixel library [https://docs.micropython.org/en/latest/library/neopixel.html#class-neopixel](https://docs.micropython.org/en/latest/library/neopixel.html#class-neopixel)
 - Raspberry Pi Pico W documentation: [https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html)
-- Course lab exercises: [BUT FEEC DE2 MicroPython Labs](https://github.com/tomas-fryza/esp-micropython)
+- DE2 Course lab exercises: [BUT FEEC DE2 MicroPython Labs](https://gitlab.fekt.vut.cz/fryza/micropython-course-labs)
