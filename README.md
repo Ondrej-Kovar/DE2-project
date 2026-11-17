@@ -29,7 +29,7 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 2. Automatically turns on light (**Light sensor**) after sunset to ensure constant growth.
 3. Provides a local visual interface (**OLED display**) showing live measurements and system status.
 4. Automatically activates an extraction fan via a MOSFET driver when conditions exceed target thresholds.
-5. Allows users to configure temperature and humidity setpoints (thresholds) using physical inputs (**rotary encoder**). 
+5. Allows users to configure temperature, humidity and light setpoints (thresholds) using physical inputs (**Rotary encoder**). 
 6. Transmits telemetry data, light and fan status over Wi-Fi to ThingSpeak.
 
 ---
@@ -41,12 +41,12 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 |---|---|---|---|
 | **Raspberry Pi Pico W** | RP2040 microcontroller with 2.4 GHz Wi-Fi | Core controller | 5 V (VBUS) / 3.3 V logic |
 | **BME280** | Temperature, Relative Humidity, Pressure sensor | I2C (SDA/SCL) | 3.3 V |
-| **Light Sensor (LDR)** | Ambient light sensor in voltage divider circuit (LDR + 5 kΩ resistor) | Analog (ADC0 / GP26) | 3.3 V |
-| **OLED Display** | 1.3" OLED (SH1106 driver, 128x64 px) | I2C (SDA/SCL) | 3.3 V |
+| **Light Sensor** | Ambient light sensor in voltage divider circuit (LDR + 5 kΩ resistor) | Analog (ADC0 / GP26) | 3.3 V |
+| **OLED Display SH1106** | 1.3" OLED (SH1106 driver, 128x64 px) | I2C (SDA/SCL) | 3.3 V |
 | **Fan** | 3 V DC ventilation fan | Digital switching via MOSFET | External 3 V DC supply |
-| **LED Strip** | 3 V DC LED lighting strip (NeoPixel) | Digital data (via neopixel library) | External 3 V DC supply |
-| **Fan Driver** | N-channel logic-level MOSFET (e.g. IRLZ44N, 2N7000 or AO3400) + flyback diode for inductive fan load | Digital GPIO | - |
-| **Rotary Encoder** | Rotary Encoder (KY-040) with integrated push-button for input control | 3x Digital GPIO (internal pull-up) | 3.3 V |
+| **LED Strip NeoPixel WS2812B** | Individually addressable RGB LED strip | Digital data (via neopixel library) | External 3 V DC supply |
+| **Fan Driver** | N-channel logic-level MOSFET (e.g. IRLZ44N, 2N7000 or AO3400) + 100 kΩ resistor | Digital GPIO | - |
+| **Rotary Encoder KY-040** | Rotary Encoder with integrated push-button for input control | 3x Digital GPIO (internal pull-up) | 3.3 V |
 | **External power supply 3 V** | External DC power adapters for the LED strip and extraction fan (3V) | Power rails / DC jack | 3 V |
 
 ### Pinout & Wiring Plan
@@ -111,20 +111,24 @@ DE2-project
 ├─ src                          # MicroPython production code
 │  ├─ config.py                 # Wi-Fi credentials, API keys & threshold defaults
 │  ├─ drivers                   # Reusable hardware driver classes
-│  │  ├─ actuator.py            # Fan / general digital actuator control
-│  │  ├─ bme280.py              # BME280 I2C temp/humidity/pressure sensor
-│  │  ├─ led_strip.py           # NeoPixel LED strip controller
-│  │  ├─ light_sensor.py        # LDR ADC voltage reader & hysteresis logic
+│  │  ├─ actuator.py            # Fan / general digital actuator control (MOSFET)
+│  │  ├─ bme280.py              # BME280 I2C temp/humidity/pressure sensor wrapper
+│  │  ├─ led_strip.py           # Addressable NeoPixel LED strip controller
+│  │  ├─ light_sensor.py        # LDR ADC voltage reader wrapper
 │  │  ├─ rotary.py              # KY-040 rotary encoder IRQ handler
-│  │  ├─ sh1106.py              # SH1106 OLED display driver
+│  │  ├─ sh1106.py              # SH1106 OLED display driver and UI wrapper
 │  │  ├─ thingspeak_upload.py   # Wi-Fi connection and HTTP POST telemetry
 │  │  └─ __init__.py            # Python package initialization
 │  └─ main.py                   # Application entry point & non-blocking superloop
 └─ tests                        # Component isolation and hardware test scripts
-   ├─ test_actuators.py         # Validates MOSFET/relay switching
+   ├─ test_actuators.py         # Validates Fan MOSFET ON/OFF switching
+   ├─ test_bme280.py            # Standalone test for BME280 readings
    ├─ test_i2c_scan.py          # Scans bus for BME280 and OLED addresses
-   ├─ test_ldr.py               # Prints raw ADC voltage from light sensor
-   ├─ test_LightControl.py      # Tests LDR to NeoPixel automated logic
+   ├─ test_ldr.py               # Raw LDR voltage measurements
+   ├─ test_led_strip.py         # Tests NeoPixel color and brightness control
+   ├─ test_LightControl.py      # Tests automated hysteresis logic (LDR -> NeoPixel)
+   ├─ test_light_sensor.py      # Validates the light_sensor class wrapper
+   ├─ test_oled.py              # Validates UI layout, menu states, and cursors
    └─ test_tsupload.py          # Verifies Wi-Fi connectivity and cloud upload
 ```
 ---

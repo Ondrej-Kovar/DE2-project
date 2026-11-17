@@ -23,19 +23,3 @@ class LEDStrip:
     def set_color(self, r, g, b):
         """Optional method to change color during runtime."""
         self.on_color = (r, g, b)
-
-if __name__ == "__main__": 
-    # Quick testing code - toggles the strip on for 2 seconds, then off
-    strip = LEDStrip(2)
-    
-    try:
-        strip.set_state(1)
-        print("LED Strip on")
-        time.sleep(2)
-
-        strip.set_state(0)
-        print("LED Strip off")
-            
-    except KeyboardInterrupt:
-        # Safely turn off the strip if the test is interrupted
-        strip.set_state(0)

@@ -37,17 +37,3 @@ class LightSensor:
         
         # Returns a tuple: (status 1/0, measured voltage)
         return (1 if self.light_on else 0), voltage
-    
-if __name__ == "__main__": 
-    # Quick testing code - validates functionality of voltage divider and LED command
-    sensor = LightSensor(26)
-    
-    try:
-        while True:
-            # check_light() directly returns both the LED status and the voltage
-            led_command, voltage = sensor.check_light()
-            
-            print(f"U: {voltage:.2f} V | LED command: {led_command}")
-            time.sleep_ms(500)
-    except KeyboardInterrupt:
-        pass
