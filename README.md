@@ -154,19 +154,19 @@ DE2-project
 
 
 ### 1. Sensor Verification (BME280)
-- **Measurement Range Tested:** Temp [°C], Humidity [%RH], Pressure [hPa].
-- **Sampling Stability:** Observed sensor noise, calibration offset, and response time when subjected to elevated temperature or humidity.
+- **Module Testing:** Hardware communication and data parsing were successfully verified using the standalone `test_bme280.py` script.
 
 ### 2. Fan Driver & Actuation Test
 - **Driver switching test:** Verified switching voltage can be 3 V.
-- **Hysteresis control:** Fan turns ON when $T > T_{threshold}$ and OFF when $T < T_{threshold} - \Delta T$ to prevent rapid on/off oscillation.
+- **Hysteresis control:** Fan turns ON when $T > T_{threshold}$ OR $RH > RH_{threshold}$, and turns OFF when both $T < T_{threshold} - \Delta T$ AND $RH < RH_{threshold} - \Delta RH$ to prevent rapid on/off oscillation.
 
 ### 3. Automated Light Control (LDR & LED Strip)
 - **Logic & Hysteresis validation:** Verified LDR voltage divider readings via ADC with a 10-sample averaging filter. Confirmed that the NeoPixel LED strip correctly toggles based on ambient light without flickering due to software hysteresis.
 - **Integration test:** Successfully validated hardware response and software logic using a dedicated test script (`test_LightControl.py`).
 
-### 4. Display Refresh Rate & Responsiveness
+### 4. OLED Display
 - Verified non-blocking screen updates without stuttering input recognition.
+- **Module Testing:** Verified functionality using `test_oled.py` script.
 
 ### 5. Cloud Telemetry (ThingSpeak)
 - **Wi-Fi & API Connection:** Verified stable network connection and successful HTTP POST requests using the `test_tsupload.py` script.
