@@ -1,44 +1,40 @@
 """
-Driver classes for actuators (MOSFET-driven fan and LED strip) and RGB indicator.
+Driver classes for actuators (MOSFET-driven digital fan switch) and RGB indicator.
 Compatible with Raspberry Pi Pico (MicroPython).
 """
 
-from machine import Pin, PWM
+from machine import Pin
+
 
 class Actuator:
     """
-    Reusable abstraction for digital or PWM-controlled power actuators
-    (such as a MOSFET-driven fan or LED strip).
+    Digital ON/OFF power actuator driver (e.g. for a MOSFET-switched fan).
+    Operates via standard GPIO output without PWM.
     """
 
-    def __init__(self, pin_num: int, name: str = "Actuator", use_pwm: bool = False, pwm_freq: int = 1000):
+    def __init__(self, pin_num: int, name: str = "Fan", active_high: bool = True, **kwargs):
+        """
+        Initialize digital actuator.
+        :param pin_num: GPIO pin number.
+        :param name: Human-readable identifier.
+        :param active_high: True if HIGH level turns actuator ON (standard N-MOSFET).
+        """
         self.name = name
-        self.use_pwm = use_pwm
+        self._active_high = active_high
         self._state = False
 
-        if self.use_pwm:
-            self._pwm = PWM(Pin(pin_num))
-            self._pwm.freq(pwm_freq)
-            self._pwm.duty_u16(0)
-        else:
-            self._pin = Pin(pin_num, Pin.OUT)
-            self._pin.value(0)
+        self._pin = Pin(pin_num, Pin.OUT)
+        self.off()
 
     def on(self):
         """Turn actuator fully ON."""
         self._state = True
-        if self.use_pwm:
-            self._pwm.duty_u16(65535)
-        else:
-            self._pin.value(1)
+        self._pin.value(1 if self._active_high else 0)
 
     def off(self):
         """Turn actuator OFF."""
         self._state = False
-        if self.use_pwm:
-            self._pwm.duty_u16(0)
-        else:
-            self._pin.value(0)
+        self._pin.value(0 if self._active_high else 1)
 
     def toggle(self):
         """Toggle current state."""
@@ -47,22 +43,22 @@ class Actuator:
         else:
             self.on()
 
+    def set_state(self, state: bool):
+        """Explicitly set actuator state (True=ON, False=OFF)."""
+        if state:
+            self.on()
+        else:
+            self.off()
+
     def set_level(self, percent: float):
         """
-        Set PWM duty level in percentage (0.0 to 100.0 %).
-        Automatically switches actuator state.
+        Compatibility fallback for level-based control.
+        Switches ON if percent > 0, otherwise switches OFF.
         """
-        if not self.use_pwm:
-            if percent > 0:
-                self.on()
-            else:
-                self.off()
-            return
-
-        percent = max(0.0, min(100.0, percent))
-        duty = int((percent / 100.0) * 65535)
-        self._pwm.duty_u16(duty)
-        self._state = percent > 0
+        if percent > 0:
+            self.on()
+        else:
+            self.off()
 
     @property
     def is_active(self) -> bool:
@@ -71,6 +67,10 @@ class Actuator:
 
     def __str__(self):
         return f"{self.name}(state={'ON' if self._state else 'OFF'})"
+
+
+# Convenient alias
+Fan = Actuator
 
 
 class RGBIndicator:
