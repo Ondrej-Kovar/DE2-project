@@ -15,10 +15,10 @@ import sys
 # Ensure drivers and config can be imported from src
 sys.path.append("src")
 try:
-    import config
-    PIN_CLK = config.PIN_ENC_CLK
-    PIN_DT = config.PIN_ENC_DT
-    PIN_SW = config.PIN_ENC_SW
+    import settings
+    PIN_CLK = settings.PIN_ENC_CLK
+    PIN_DT = settings.PIN_ENC_DT
+    PIN_SW = settings.PIN_ENC_SW
 except (ImportError, AttributeError):
     # Default fallbacks if config is not available on path
     PIN_CLK = 16

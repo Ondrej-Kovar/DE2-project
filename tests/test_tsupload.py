@@ -98,7 +98,7 @@ def clear_thingspeak_channel(channel_id, user_api_key):
 
 
 if __name__ == "__main__":
-    WRITE_API_KEY = "J9ZA8CSYK7X9E6JS"
+    WRITE_API_KEY = "YOUR_API_KEY" # <- real api key must be inserted
     
     # Optional: Clear channel before testing (requires User API Key and Channel ID)
     # USER_API_KEY = "YOUR_USER_API_KEY"

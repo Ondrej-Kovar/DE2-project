@@ -1,220 +1,171 @@
 """
-Main application for Smart Greenhouse Monitor.
-Runs cooperative concurrent tasks using MicroPython uasyncio.
-Platform: Raspberry Pi Pico W
+Main application entry point for the Smart Greenhouse System (DE2 Project).
+Runs a non-blocking superloop integrating BME280, LDR, SH1106 OLED,
+KY-040 rotary encoder, MOSFET fan, NeoPixel LED strip, and ThingSpeak telemetry.
 """
-
-import uasyncio as asyncio
-from machine import Pin, I2C, ADC
 import time
+from machine import I2C, Pin
 
-import config
-from drivers import BME280, SH1106_I2C, RotaryEncoder, Actuator, RGBIndicator
-
-# ==============================================================================
-# Shared Application State
-# ==============================================================================
-class GreenhouseState:
-    def __init__(self):
-        # Sensor measurements
-        self.temperature = 22.0
-        self.humidity = 50.0
-        self.pressure = 1013.25
-        self.light_level_raw = 30000
-
-        # User setpoints / Thresholds
-        self.temp_threshold = config.DEFAULT_TEMP_THRESHOLD
-        self.hum_threshold = config.DEFAULT_HUM_THRESHOLD
-
-        # Actuator states
-        self.fan_active = False
-        self.light_active = False
-
-        # System status
-        self.sensor_error = False
-        self.menu_mode = 0  # 0: View status, 1: Edit Temp Threshold, 2: Edit Hum Threshold
+import settings as config
+from drivers.actuator import Fan
+from drivers.bme280_sensor import BME280Sensor
+from drivers.led_strip import LEDStrip
+from drivers.light_sensor import LightSensor
+from drivers.rotary import RotaryEncoder
+from drivers.sh1106_display import OLEDDisplay
+from drivers.thingspeak_upload import ThingSpeakUpload
 
 
-# Instantiate global state
-state = GreenhouseState()
+def main():
+    print("Initializing Smart Greenhouse System...")
 
-# ==============================================================================
-# Hardware Initialization
-# ==============================================================================
-print("Initializing I2C bus...")
-i2c = I2C(config.I2C_ID, sda=Pin(config.PIN_SDA), scl=Pin(config.PIN_SCL), freq=config.I2C_FREQ)
+    # 1. Shared I2C Bus (BME280 + SH1106 OLED)
+    i2c = I2C(0, sda=Pin(config.PIN_I2C_SDA), scl=Pin(config.PIN_I2C_SCL), freq=config.I2C_FREQ)
 
-print("Initializing Sensors & Actuators...")
-# BME280 Sensor
-bme = None
-try:
-    bme = BME280(i2c, addr=0x76)
-    print("BME280 initialized successfully.")
-except Exception as e:
-    print(f"Warning: BME280 initialization failed: {e}")
-    state.sensor_error = True
+    # 2. Initialize Display
+    display = OLEDDisplay(i2c, address=0x3C)
 
-# OLED Display SH1106
-oled = None
-try:
-    oled = SH1106_I2C(width=128, height=64, i2c=i2c, addr=0x3C)
-    print("SH1106 OLED initialized successfully.")
-except Exception as e:
-    print(f"Warning: OLED initialization failed: {e}")
+    # 3. Initialize BME280 (graceful fallback if disconnected at boot)
+    bme = None
+    sensor_error = False
+    try:
+        bme = BME280Sensor(i2c, address=0x76)
+    except OSError as e:
+        print("BME280 init error:", e)
+        sensor_error = True
 
-# Photoresistor (LDR) ADC
-ldr_adc = ADC(Pin(config.PIN_LDR_ADC))
-
-# Actuators
-fan = Actuator(config.PIN_FAN, name="Fan_12V")
-light_strip = Actuator(config.PIN_LIGHT, name="Grow_LED", use_pwm=True)
-rgb = RGBIndicator(config.PIN_RGB_R, config.PIN_RGB_G, config.PIN_RGB_B)
-
-# Rotary Encoder
-encoder = RotaryEncoder(config.PIN_ENC_CLK, config.PIN_ENC_DT, config.PIN_ENC_SW, min_val=15, max_val=40, step=1)
-encoder.value = int(state.temp_threshold)
-
-# ==============================================================================
-# Async Tasks
-# ==============================================================================
-
-async def task_inputs():
-    """High frequency task: handles encoder rotation and push button debounce."""
-    while True:
-        # Check if button was clicked to cycle menus
-        if encoder.is_button_pressed():
-            state.menu_mode = (state.menu_mode + 1) % 3
-            if state.menu_mode == 1:
-                encoder.set_range(15, 45, int(state.temp_threshold), step=1)
-            elif state.menu_mode == 2:
-                encoder.set_range(30, 95, int(state.hum_threshold), step=5)
-
-        # Update setpoint value depending on active menu
-        if state.menu_mode == 1:
-            state.temp_threshold = float(encoder.value)
-        elif state.menu_mode == 2:
-            state.hum_threshold = float(encoder.value)
-
-        await asyncio.sleep_ms(25)
-
-
-async def task_sensors():
-    """Medium frequency task: reads BME280 and LDR sensor."""
-    while True:
-        try:
-            if bme:
-                t, p, h = bme.read_compensated_data()
-                state.temperature = t
-                state.pressure = p
-                state.humidity = h
-                state.sensor_error = False
-        except Exception as e:
-            print(f"Sensor read error: {e}")
-            state.sensor_error = True
-
-        # Read ambient light level (16-bit unsigned integer: 0 to 65535)
-        state.light_level_raw = ldr_adc.read_u16()
-
-        await asyncio.sleep_ms(500)
-
-
-async def task_control():
-    """Control logic: evaluates thresholds with hysteresis and updates outputs."""
-    while True:
-        # 1. Climate / Fan Regulation with Hysteresis
-        turn_on_temp = state.temp_threshold
-        turn_off_temp = state.temp_threshold - config.TEMP_HYSTERESIS
-
-        if state.temperature >= turn_on_temp or state.humidity >= state.hum_threshold:
-            fan.on()
-            state.fan_active = True
-        elif state.temperature < turn_off_temp and state.humidity < (state.hum_threshold - 5.0):
-            fan.off()
-            state.fan_active = False
-
-        # 2. Lighting Regulation (LDR threshold)
-        if state.light_level_raw < config.LIGHT_THRESHOLD_ADC:
-            light_strip.set_level(100.0)
-            state.light_active = True
-        else:
-            light_strip.set_level(0.0)
-            state.light_active = False
-
-        # 3. Status RGB Indicator
-        if state.sensor_error:
-            rgb.alert()
-        elif state.fan_active or state.light_active:
-            rgb.warning()
-        else:
-            rgb.ok()
-
-        await asyncio.sleep_ms(500)
-
-
-async def task_display():
-    """Display task: renders live data and user menu onto OLED."""
-    while True:
-        if oled:
-            oled.fill(0)
-
-            # Header / Status bar
-            if state.menu_mode == 0:
-                oled.text("GREENHOUSE MON", 0, 0)
-            elif state.menu_mode == 1:
-                oled.text("SET TEMP LIMIT", 0, 0)
-            elif state.menu_mode == 2:
-                oled.text("SET HUM LIMIT", 0, 0)
-
-            oled.hline(0, 10, 128, 1)
-
-            # Live Measurements
-            oled.text(f"Temp: {state.temperature:4.1f} C", 0, 15)
-            oled.text(f"Humi: {state.humidity:4.1f} %", 0, 27)
-            oled.text(f"Light: {state.light_level_raw:5d}", 0, 39)
-
-            # Setpoints & Actuators
-            fan_str = "ON" if state.fan_active else "OFF"
-            light_str = "ON" if state.light_active else "OFF"
-            oled.text(f"F:{fan_str}  L:{light_str}", 0, 52)
-
-            # Active setpoint indicator
-            if state.menu_mode == 1:
-                oled.text(f"[*T:{int(state.temp_threshold)}C]", 68, 52)
-            elif state.menu_mode == 2:
-                oled.text(f"[*H:{int(state.hum_threshold)}%]", 68, 52)
-
-            oled.show()
-
-        await asyncio.sleep_ms(200)
-
-
-async def task_telemetry():
-    """Telemetry task: periodic telemetry reporting over Wi-Fi / MQTT."""
-    while True:
-        # Example telemetry output to serial console (and Wi-Fi/MQTT when configured)
-        print(f"[Telemetry] Temp={state.temperature:.1f}C, Hum={state.humidity:.1f}%, "
-              f"Light={state.light_level_raw}, Fan={state.fan_active}, LightStrip={state.light_active}")
-        await asyncio.sleep_ms(15000)
-
-
-# ==============================================================================
-# Application Entry Point
-# ==============================================================================
-async def main():
-    print("Starting Smart Greenhouse concurrent loop...")
-    await asyncio.gather(
-        task_inputs(),
-        task_sensors(),
-        task_control(),
-        task_display(),
-        task_telemetry(),
+    # 4. Initialize Light Sensor, Actuators, Encoder & Cloud Uploader
+    light_sensor = LightSensor(
+        pin=config.PIN_LDR,
+        light_low=config.DEFAULT_LIGHT_LOW,
+        light_high=config.DEFAULT_LIGHT_HIGH,
+    )
+    fan = Fan(pin_num=config.PIN_FAN, name="GreenhouseFan", active_high=True)
+    led_strip = LEDStrip(pin=config.PIN_LED_STRIP, num_leds=config.NUM_LEDS)
+    encoder = RotaryEncoder(
+        clk_pin=config.PIN_ENC_CLK,
+        dt_pin=config.PIN_ENC_DT,
+        sw_pin=config.PIN_ENC_SW,
+    )
+    uploader = ThingSpeakUpload(
+        api_key=config.THINGSPEAK_API_KEY,
+        ssid=config.WIFI_SSID,
+        password=config.WIFI_PASSWORD,
     )
 
-if __name__ == "__main__":
+    # 5. Runtime State Variables
+    temp, hum, pres = 0.0, 0.0, 0.0
+    light_pct = 0
+
+    temp_lim = config.DEFAULT_TEMP_LIM
+    hum_lim = config.DEFAULT_HUM_LIM
+
+    menu_mode = 0  # 0: Monitor, 1: Temp, 2: Hum, 3: Light Low, 4: Light High
+    last_led_state = -1  # Force initial write on first cycle
+
+    now = time.ticks_ms()
+    last_sensor_time = time.ticks_add(now, -config.SENSOR_INTERVAL_MS)
+    last_display_time = time.ticks_add(now, -config.DISPLAY_INTERVAL_MS)
+    last_upload_time = now
+
+    print("System ready. Entering main superloop...")
+
     try:
-        asyncio.run(main())
+        while True:
+            now = time.ticks_ms()
+
+            # 1 Encoder Button Handling (Menu State Machine) - threshold control + forced OLED refresh
+            if encoder.is_button_pressed():
+                menu_mode = (menu_mode + 1) % 5
+                if menu_mode == 1:
+                    encoder.set_range(15, 40, int(temp_lim), step=1) #set_range(self, min_val: int, max_val: int, current_val: int = None, step: int = 1):
+                elif menu_mode == 2:
+                    encoder.set_range(20, 95, int(hum_lim), step=1)
+                elif menu_mode == 3:
+                    encoder.set_range(0, light_sensor.light_high - 5, light_sensor.light_low, step=5) 
+                elif menu_mode == 4:
+                    encoder.set_range(light_sensor.light_low + 5, 100, light_sensor.light_high, step=5)
+                # Trigger immediate display refresh
+                last_display_time = time.ticks_add(now, -config.DISPLAY_INTERVAL_MS)
+
+            # 2 Apply Encoder Value to Active Threshold
+            if menu_mode == 1:
+                temp_lim = float(encoder.value)
+            elif menu_mode == 2:
+                hum_lim = float(encoder.value)
+            elif menu_mode == 3:
+                light_sensor.light_low = int(encoder.value)
+            elif menu_mode == 4:
+                light_sensor.light_high = int(encoder.value)
+
+            # 3 Periodic Sensor Read & Hysteresis Control (1 s)
+            if time.ticks_diff(now, last_sensor_time) >= config.SENSOR_INTERVAL_MS:
+                last_sensor_time = now
+
+                # Read BME280
+                if bme is not None:
+                    try:
+                        temp, hum, pres = bme.get_readings()
+                        sensor_error = False
+                    except OSError as e:
+                        print("BME280 read error:", e)
+                        sensor_error = True
+
+                # Fan Hysteresis: ON if T > T_lim OR RH > RH_lim; OFF if both below hysteresis
+                if not sensor_error:
+                    if temp > temp_lim or hum > hum_lim:
+                        fan.on()
+                    elif temp < (temp_lim - config.TEMP_HYSTERESIS) and hum < (hum_lim - config.HUM_HYSTERESIS):
+                        fan.off()
+                else:
+                    fan.off()
+
+                # Light Sensor & NeoPixel Hysteresis
+                led_state, light_pct = light_sensor.check_light()
+                if led_state != last_led_state:
+                    led_strip.set_state(led_state)
+                    last_led_state = led_state
+
+            # 4 Periodic OLED Refresh (250 ms)
+            if time.ticks_diff(now, last_display_time) >= config.DISPLAY_INTERVAL_MS:
+                last_display_time = now
+                display.show_data(
+                    temp=temp,
+                    temp_lim=temp_lim,
+                    hum=hum,
+                    hum_lim=hum_lim,
+                    pres=pres,
+                    light_pct=light_pct,
+                    light_low=light_sensor.light_low,
+                    light_high=light_sensor.light_high,
+                    fan_on=fan.is_active,
+                    led_on=(last_led_state == 1),
+                    menu_mode=menu_mode,
+                    sensor_error=sensor_error,
+                )
+
+            # 5 Periodic ThingSpeak Cloud Telemetry (20 s)
+            if time.ticks_diff(now, last_upload_time) >= config.UPLOAD_INTERVAL_MS:
+                last_upload_time = now
+                if not sensor_error:
+                    uploader.upload_data(
+                        temperature=temp,
+                        humidity=hum,
+                        pressure=pres,
+                        fan_status=1 if fan.is_active else 0,
+                        light_status=1 if last_led_state == 1 else 0,
+                    )
+
+            time.sleep_ms(10) #Yield briefly (lab4)
+
     except KeyboardInterrupt:
-        print("Program interrupted by user. Turning off actuators.")
+        print("\nShutting down safely...")
         fan.off()
-        light_strip.off()
-        rgb.off()
+        led_strip.set_state(0)
+        display.off()
+        uploader.disconnect()
+        print("Shutdown complete.")
+
+
+if __name__ == "__main__":
+    main()

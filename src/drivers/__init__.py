@@ -1,7 +1,10 @@
 """
 Hardware driver package for Smart Greenhouse Monitor.
 """
-from .bme280 import BME280
-from .sh1106 import SH1106_I2C
+from .actuator import Actuator, Fan
+from .bme280_sensor import BME280Sensor
+from .led_strip import LEDStrip
+from .light_sensor import LightSensor
 from .rotary import RotaryEncoder
-from .actuator import Actuator, Fan, RGBIndicator
+from .sh1106_display import OLEDDisplay
+from .thingspeak_upload import ThingSpeakUpload

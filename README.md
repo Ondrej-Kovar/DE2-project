@@ -13,8 +13,8 @@ Embedded systems term project for the **Digital Electronics 2 (DE2)** course at 
 | Name | Responsibilities |
 |---|---|
 | **Adam Koutný** | Block diagram, Wiring diagram, BME sensor, LED display |
-| **Ondřej Kovář** | Encoder, Drivers, Main Code |
-| **Richard Královský** | Led strip control, Wi-Fi data transmission, Main Code |
+| **Ondřej Kovář** | Encoder, Drivers, Main Code, README |
+| **Richard Královský** | Led strip control, Wi-Fi data transmission, Main Code, README |
 
 ---
 
@@ -31,6 +31,9 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 4. Automatically activates an extraction fan via a MOSFET driver when conditions exceed target thresholds.
 5. Allows users to configure temperature, humidity and light setpoints (thresholds) using physical inputs (**Rotary encoder**). 
 6. Transmits telemetry data, light and fan status over Wi-Fi to ThingSpeak.
+---
+
+**Live Telemetry Dashboard:** [View Public ThingSpeak Channel](https://thingspeak.com/channels/3558132)
 
 ---
 
@@ -79,57 +82,60 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 
 ## Timing & Concurrency Plan
 
-To achieve a highly responsive user experience (UX), the software abandons blocking `time.sleep()` calls in favor of a **100% non-blocking "superloop"** based on `time.ticks_ms()` paired with **Hardware Interrupts (IRQs)**.
+To achieve a responsive user experience (UX), the software avoids long blocking `time.sleep()` calls in favor of a **non-blocking "superloop"** based on `time.ticks_ms()` paired with **Hardware Interrupts (IRQs)** for both rotary encoder rotation and button presses.
 
-To accommodate the conservative 100 kHz I2C speed without blocking the 100 ms local loop, the OLED display is updated using a "dirty flag" logic (it only redraws when a value physically changes). 
+To accommodate the 100 kHz I2C bus speed without overloading the CPU, sensor readings, OLED updates, and cloud telemetry are decoupled into independent time intervals.
 
-| Task Name | Interval / Trigger | Estimated Duration | Responsibility |
+| Logical Task | Interval / Trigger | Estimated Duration | Responsibility |
 |---|---|---|---|
-| `isr_encoder` | On pin change (IRQ) | < 0.1 ms (Microseconds) | Instantly captures rotary encoder rotation (CLK, DT) and button presses (SW) in the background. Sets `display_dirty` flag. |
-| `task_local_update` | Every 100 ms | ~ 10 ms (logic only)<br> ~ 90–110 ms (if OLED redraws) | Reads BME280 and LDR sensors, evaluates hysteresis logic for actuators. If data changed or the encoder was moved, it triggers an OLED redraw. |
-| `task_telemetry` | Every 20 seconds | ~ 1–3 s (Up to 10 s if reconnecting) | Formats environmental data and uploads it to ThingSpeak via Wi-Fi HTTP POST. *(Note: IRQs ensure encoder inputs are never lost during this blocking network request).* |
+| `RotaryEncoder` IRQs (`_on_rotate`, `_on_button`) | On `CLK` change / `SW` falling edge (IRQ) | < 0.1 ms (Microseconds) | Instantly captures encoder rotation (`CLK`, `DT`) and debounced button presses (`SW`, 100 ms) in the background so inputs are never missed. |
+| **Input Handling** | Every 10 ms | < 1 ms | Checks the IRQ button flag (`is_button_pressed()`), cycles menu modes (0–4), and applies the active encoder value to thresholds. |
+| **OLED Refresh** | Every 250 ms *(or on button click)* | ~ 80–100 ms | Renders environmental data, thresholds, cursor, and actuator states to the SH1106 display over I2C. |
+| **Sensors & Control** | Every 1000 ms (1 s) | ~ 10–15 ms | Reads BME280 (I2C) and 10-sample averaged LDR (ADC), evaluates hysteresis logic, and updates the MOSFET fan and NeoPixel LED strip (LED writes occur only on state change). |
+| **Cloud Telemetry** | Every 20 seconds | ~ 1–3 s *(up to 10 s if reconnecting)* | Verifies Wi-Fi connection and uploads sensor readings and actuator states to ThingSpeak via HTTP POST. *(IRQs ensure encoder rotation and button presses are still captured during network requests).* |
 
 ---
 ### Execution Time Breakdown:
-* **Sensors & Logic:** The LDR reading uses a 10-sample averaging algorithm via ADC, taking roughly **0.5 ms**. Reading the BME280 via I2C at 100 kHz takes **~10 ms**. Processing the hysteresis logic is nearly instantaneous.
-* **OLED Display:** Pushing the frame buffer to the SH1106 OLED via I2C at 100 kHz is the heaviest local task, taking **~80 to 100 ms**. To prevent the 100 ms loop from overflowing continuously, the display is only updated when a value changes.
-* **Cloud Telemetry:** Wi-Fi HTTP requests are the main system bottleneck, occupying the processor for **1 to 3 seconds**. Since this only happens every 20 seconds, the local loop maintains a highly responsive user interface.
+- **Sensors & Logic:** The LDR reading uses 10-sample averaging via ADC (~**0.5 ms**). Reading the BME280 via I2C at 100 kHz takes **~10 ms**. NeoPixel updates (50 LEDs) take **~1.5 ms** and are triggered only when the light state changes.
+- **OLED Display:** Pushing the 128×64 frame buffer to the SH1106 over 100 kHz I2C takes **~80–100 ms**. Running this every 250 ms leaves plenty of headroom for the 20 ms input loop while keeping the UI responsive.
+- **Cloud Telemetry:** Wi-Fi HTTP POST requests are the main bottleneck (**1–3 seconds**), but running every 20 seconds (respecting the ThingSpeak 15 s free-tier limit) keeps local operation smooth.
 
 ---
 
 ## Repository Structure
 ```text
 DE2-project
-├─ docs                         # Sphinx documentation source files
-│  ├─ conf.py                   # Sphinx configuration
-│  └─ index.rst                 # Documentation root
-├─ Images                       # Architecture and wiring diagrams
-│  ├─ Block_diagram.png
-│  └─ Wiring.png
-├─ presentation                 # Poster and demonstration assets
-├─ README.md                    # This project report & documentation
-├─ src                          # MicroPython production code
-│  ├─ config.py                 # Wi-Fi credentials, API keys & threshold defaults
-│  ├─ drivers                   # Reusable hardware driver classes
-│  │  ├─ actuator.py            # Fan / general digital actuator control (MOSFET)
-│  │  ├─ bme280.py              # BME280 I2C temp/humidity/pressure sensor wrapper
-│  │  ├─ led_strip.py           # Addressable NeoPixel LED strip controller
-│  │  ├─ light_sensor.py        # LDR ADC voltage reader wrapper
-│  │  ├─ rotary.py              # KY-040 rotary encoder IRQ handler
-│  │  ├─ sh1106.py              # SH1106 OLED display driver and UI wrapper
-│  │  ├─ thingspeak_upload.py   # Wi-Fi connection and HTTP POST telemetry
-│  │  └─ __init__.py            # Python package initialization
-│  └─ main.py                   # Application entry point & non-blocking superloop
-└─ tests                        # Component isolation and hardware test scripts
-   ├─ test_actuators.py         # Validates Fan MOSFET ON/OFF switching
-   ├─ test_bme280.py            # Standalone test for BME280 readings
-   ├─ test_i2c_scan.py          # Scans bus for BME280 and OLED addresses
-   ├─ test_ldr.py               # Raw LDR voltage measurements
-   ├─ test_led_strip.py         # Tests NeoPixel color and brightness control
-   ├─ test_LightControl.py      # Tests automated hysteresis logic (LDR -> NeoPixel)
-   ├─ test_light_sensor.py      # Validates the light_sensor class wrapper
-   ├─ test_oled.py              # Validates UI layout, menu states, and cursors
-   └─ test_tsupload.py          # Verifies Wi-Fi connectivity and cloud upload
+├─ docs/                        # Sphinx project documentation
+│  ├─ conf.py                   # Sphinx build configuration
+│  └─ index.rst                 # Documentation entry point
+├─ Images/                      # System diagrams and schematics
+│  ├─ Block_diagram.png         # High-level system architecture diagram
+│  └─ Wiring.png                # Raspberry Pi Pico W hardware wiring schematic
+├─ presentation/                # Project presentation slides and materials
+├─ README.md                    # Project overview, pinout, and documentation
+├─ src/                         # Main MicroPython source code
+│  ├─ drivers/                  # Modular hardware driver wrappers
+│  │  ├─ actuator.py            # Digital MOSFET fan switch driver
+│  │  ├─ bme280_sensor.py       # BME280 temperature, humidity & pressure wrapper
+│  │  ├─ led_strip.py           # WS2812B NeoPixel LED strip controller
+│  │  ├─ light_sensor.py        # LDR ambient light sensor (ADC) with hysteresis
+│  │  ├─ rotary.py              # KY-040 rotary encoder & button driver (IRQ-based)
+│  │  ├─ sh1106_display.py      # SH1106 128×64 OLED display UI wrapper
+│  │  ├─ thingspeak_upload.py   # Wi-Fi & ThingSpeak HTTP POST telemetry uploader
+│  │  └─ __init__.py            # Driver package exports
+│  ├─ main.py                   # Main non-blocking superloop application
+│  └─ settings.py               # Pinout, credentials, thresholds & timing intervals
+└─ tests/                       # Standalone hardware & integration test scripts
+   ├─ test_actuators.py         # MOSFET fan switching test
+   ├─ test_bme280.py            # BME280 sensor reading test
+   ├─ test_i2c_scan.py          # I2C bus device address scanner
+   ├─ test_ldr.py               # Raw LDR ADC voltage test
+   ├─ test_led_strip.py         # NeoPixel LED strip color/state test
+   ├─ test_LightControl.py      # Integrated LDR + LED strip control test
+   ├─ test_light_sensor.py      # LightSensor class percentage & hysteresis test
+   ├─ test_oled.py              # SH1106 OLED display rendering test
+   ├─ test_rotary.py            # KY-040 rotary encoder & button test
+   └─ test_tsupload.py          # ThingSpeak cloud upload test
 ```
 ---
 
@@ -142,35 +148,44 @@ DE2-project
 ### Quick Start
 1. Clone this repository:
    ```bash
-   git clone https://github.com/Ondrej-Kovar/DE2-project.git
+   git clone [https://github.com/Ondrej-Kovar/DE2-project.git](https://github.com/Ondrej-Kovar/DE2-project.git)
    ```
-2. Connect your Pico W to your computer via USB.
-3. Upload files from `src/` to the root filesystem of your Pico W.
-4. Run `main.py` directly from your IDE or reset the Pico W to execute automatically on boot.
+2. **Configure `src/settings.py` (Required):** Before uploading, open `src/settings.py` and set the following three parameters:
+   - `WIFI_SSID`
+   - `WIFI_PASSWORD`
+   - `THINGSPEAK_API_KEY`
+3. Connect your Pico W to your computer via USB.
+4. Upload all files from `src/` to the root filesystem of your Pico W (ensure `bme280.py`, `sh1106.py`, and `wifi_utils.py` are present in `/lib` or root).
+5. Run `main.py` directly from your IDE or reset the Pico W to execute automatically on boot.
 
 ---
 
 ## Testing & Verification
 
-
 ### 1. Sensor Verification (BME280)
+- **I2C Bus Coexistence:** Verified shared 100 kHz I2C bus addressing (`0x76` for BME280, `0x3C` for SH1106) using `test_i2c_scan.py`.
 - **Module Testing:** Hardware communication and data parsing were successfully verified using the standalone `test_bme280.py` script.
 
 ### 2. Fan Driver & Actuation Test
-- **Driver switching test:** Verified switching voltage can be 3 V.
-- **Hysteresis control:** Fan turns ON when $T > T_{threshold}$ OR $RH > RH_{threshold}$, and turns OFF when both $T < T_{threshold} - \Delta T$ AND $RH < RH_{threshold} - \Delta RH$ to prevent rapid on/off oscillation.
+- **Driver Switching Test:** Verified reliable MOSFET switching at 3.3 V logic levels using `test_actuators.py`.
+- **Hysteresis Control:** Fan turns ON when $T > T_{threshold}$ OR $RH > RH_{threshold}$, and turns OFF when both $T < T_{threshold} - \Delta T$ AND $RH < RH_{threshold} - \Delta RH$ to prevent rapid on/off oscillation.
 
 ### 3. Automated Light Control (LDR & LED Strip)
-- **Logic & Hysteresis validation:** Verified LDR voltage divider readings via ADC with a 10-sample averaging filter. Confirmed that the NeoPixel LED strip correctly toggles based on ambient light without flickering due to software hysteresis.
-- **Integration test:** Successfully validated hardware response and software logic using a dedicated test script (`test_LightControl.py`).
+- **Logic & Hysteresis Validation:** Verified LDR voltage divider readings via ADC with a 10-sample averaging filter. Confirmed that the NeoPixel LED strip correctly toggles based on ambient light without flickering due to software hysteresis.
+- **Integration Test:** Successfully validated hardware response and software logic using the dedicated `test_LightControl.py` script.
 
 ### 4. OLED Display
-- Verified non-blocking screen updates without stuttering input recognition.
-- **Module Testing:** Verified functionality using `test_oled.py` script.
+- **Non-blocking Updates:** Verified smooth screen refreshes without stuttering input recognition.
+- **Module Testing:** Verified rendering and layout formatting using the `test_oled.py` script.
 
 ### 5. Cloud Telemetry (ThingSpeak)
 - **Wi-Fi & API Connection:** Verified stable network connection and successful HTTP POST requests using the `test_tsupload.py` script.
 - **Data Integrity:** Confirmed that local environmental data and actuator states (fan/light) are correctly formatted and accurately visualized on the ThingSpeak cloud dashboard.
+
+### 6. Rotary Encoder & User Input (KY-040)
+- **Module Testing:** Verified CW/CCW quadrature decoding, min/max clamping, dynamic range switching (`set_range()`), and 100 ms IRQ button debouncing using `test_rotary.py`.
+
+### 7. Full System Integration (`main.py`)
 
 ---
 
@@ -200,4 +215,5 @@ View the generated output in `docs/_build/html/index.html`.
 - MicroPython documentation: [https://docs.micropython.org/](https://docs.micropython.org/)
 - NeoPixel library [https://docs.micropython.org/en/latest/library/neopixel.html#class-neopixel](https://docs.micropython.org/en/latest/library/neopixel.html#class-neopixel)
 - Raspberry Pi Pico W documentation: [https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html)
+- Rotary Encoder Guide (CZ) [https://navody.dratek.cz/navody-k-produktum/rotacni-enkoder-ky-040.html](https://navody.dratek.cz/navody-k-produktum/rotacni-enkoder-ky-040.html)
 - DE2 Course lab exercises: [BUT FEEC DE2 MicroPython Labs](https://gitlab.fekt.vut.cz/fryza/micropython-course-labs)
