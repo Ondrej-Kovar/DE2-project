@@ -39,14 +39,14 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 ### Bill of Materials (BOM)
 | Component | Description / Specifications | Interface / Protocol | Supply Voltage |
 |---|---|---|---|
-| **Raspberry Pi Pico W** | RP2040 microcontroller with 2.4 GHz Wi-Fi | Core controller | 5 V (VBUS) / 3.3 V logic |
-| **BME280** | Temperature, Relative Humidity, Pressure sensor | I2C (SDA/SCL) | 3.3 V |
+| [**Raspberry Pi Pico W**](https://pip.raspberrypi.com/documents/RP-008312-DS-pico-w-datasheet.pdf) | RP2040 microcontroller with 2.4 GHz Wi-Fi | Core controller | 5 V (VBUS) / 3.3 V logic |
+| [**BME280**](https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme280-ds002.pdf) | Temperature, Relative Humidity, Pressure sensor | I2C (SDA/SCL) | 3.3 V |
 | **Light Sensor** | Ambient light sensor in voltage divider circuit (LDR + 5 kΩ resistor) | Analog (ADC0 / GP26) | 3.3 V |
-| **OLED Display SH1106** | 1.3" OLED (SH1106 driver, 128x64 px) | I2C (SDA/SCL) | 3.3 V |
+| [**OLED Display SH1106**](https://cdn.velleman.eu/downloads/29/infosheets/sh1106_datasheet.pdf) | 1.3" OLED (SH1106 driver, 128x64 px) | I2C (SDA/SCL) | 3.3 V |
 | **Fan** | 3 V DC ventilation fan | Digital switching via MOSFET | External 3 V DC supply |
-| **LED Strip NeoPixel WS2812B** | Individually addressable RGB LED strip | Digital data (via neopixel library) | External 3 V DC supply |
-| **Fan Driver** | N-channel logic-level MOSFET (e.g. IRLZ44N, 2N7000 or AO3400) + 100 kΩ resistor | Digital GPIO | - |
-| **Rotary Encoder KY-040** | Rotary Encoder with integrated push-button for input control | 3x Digital GPIO (internal pull-up) | 3.3 V |
+| [**LED Strip NeoPixel WS2812B**](https://www.laskakit.cz/user/related_files/ws2812b.pdf) | Individually addressable RGB LED strip | Digital data (via neopixel library) | External 3 V DC supply |
+| **Fan Driver** | N-channel logic-level MOSFET [STP36NF06L](https://www.st.com/resource/en/datasheet/stb36nf06l.pdf) + 100 kΩ resistor | Digital GPIO | - |
+| [**Rotary Encoder KY-040**](https://www.handsontec.com/dataspecs/module/Rotary%20Encoder.pdf) | Rotary Encoder with integrated push-button for input control | 3x Digital GPIO (internal pull-up) | 3.3 V |
 | **External power supply 3 V** | External DC power adapters for the LED strip and extraction fan (3V) | Power rails / DC jack | 3 V |
 
 ### Pinout & Wiring Plan
