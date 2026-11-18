@@ -8,17 +8,17 @@ Embedded systems term project for the **Digital Electronics 2 (DE2)** course at 
 
 ---
 
-## 👥 Team Members & Responsibilities
+## Team Members & Responsibilities
 
-| Name | Role / Focus Area | Key Contributions |
-|---|---|---|
-| **Adam Koutný** |  |  |
-| **Ondřej Kovář** |  |  |
-| **Richard Královský** |  |  |
+| Name | Responsibilities |
+|---|---|
+| **Adam Koutný** | Block diagram, Wiring diagram, BME sensor, LED display |
+| **Ondřej Kovář** | Encoder, Drivers, Main Code |
+| **Richard Královský** | Led strip control, Wi-Fi data transmission, Main Code |
 
 ---
 
-## 📖 Project Overview
+## Project Overview
 
 ### Problem Statement
 Maintaining an optimal microclimate inside a greenhouse is essential for healthy plant growth. Sudden temperature spikes or excessive humidity can damage crops or lead to mold and fungal infections. Manual monitoring is time-consuming and often responds too late.
@@ -26,103 +26,114 @@ Maintaining an optimal microclimate inside a greenhouse is essential for healthy
 ### Solution Summary
 The **Smart Greenhouse Monitor** is an automated microclimate control and monitoring unit based on the **Raspberry Pi Pico W** running MicroPython. It:
 1. Continuously monitors environmental conditions (temperature, humidity, atmospheric pressure) using an I2C sensor **BME280**.
-2. Provides a local visual interface (**OLED display & RGB status LED**) showing live measurements and system status.
-3. Allows users to configure temperature and humidity setpoints (thresholds) using physical inputs (**rotary encoder**).
-4. Automatically activates an extraction fan via a transistor/MOSFET driver when conditions exceed target thresholds.
-5. Automatically turns on light after sunset to ensure constant growth
-6. Transmits telemetry data over Wi-Fi.
+2. Automatically turns on light (**Light sensor**) after sunset to ensure constant growth.
+3. Provides a local visual interface (**OLED display**) showing live measurements and system status.
+4. Automatically activates an extraction fan via a MOSFET driver when conditions exceed target thresholds.
+5. Allows users to configure temperature, humidity and light setpoints (thresholds) using physical inputs (**Rotary encoder**). 
+6. Transmits telemetry data, light and fan status over Wi-Fi to ThingSpeak.
 
 ---
 
-## 🛠️ Hardware Inventory & Wiring
+## Hardware Inventory & Wiring
 
 ### Bill of Materials (BOM)
 | Component | Description / Specifications | Interface / Protocol | Supply Voltage |
 |---|---|---|---|
 | **Raspberry Pi Pico W** | RP2040 microcontroller with 2.4 GHz Wi-Fi | Core controller | 5 V (VBUS) / 3.3 V logic |
 | **BME280** | Temperature, Relative Humidity, Pressure sensor | I2C (SDA/SCL) | 3.3 V |
-| **Photoresistor (LDR)** | Ambient light sensor in voltage divider circuit (with 10 kΩ resistor) | Analog (ADC0 / GP26) | 3.3 V |
-| **Display** | 1.3" OLED (SH1106 driver, 128x64 px) | I2C (SDA/SCL) | 3.3 V |
-| **Actuator (Fan)** | 12 V DC ventilation / extraction fan | PWM / Digital switching via MOSFET | External 12 V DC supply |
-| **Actuator (Light)** | 5 V DC LED lighting strip (grow / white light) | PWM / Digital switching via MOSFET | External 5 V DC supply |
-| **Power Drivers** | 2x N-channel logic-level MOSFET (e.g. IRLZ44N, 2N7000 or AO3400) + flyback diode for inductive fan load | Digital GPIO / PWM | - |
-| **Input Controls** | Rotary Encoder (KY-040) with integrated push-button | 3x Digital GPIO (internal/external pull-up) | 3.3 V |
-| **Status Indicator** | Common cathode/anode RGB LED with current-limiting resistors (e.g. 220–330 Ω) | 3x GPIO / PWM | 3.3 V |
+| **Light Sensor** | Ambient light sensor in voltage divider circuit (LDR + 5 kΩ resistor) | Analog (ADC0 / GP26) | 3.3 V |
+| **OLED Display SH1106** | 1.3" OLED (SH1106 driver, 128x64 px) | I2C (SDA/SCL) | 3.3 V |
+| **Fan** | 3 V DC ventilation fan | Digital switching via MOSFET | External 3 V DC supply |
+| **LED Strip NeoPixel WS2812B** | Individually addressable RGB LED strip | Digital data (via neopixel library) | External 3 V DC supply |
+| **Fan Driver** | N-channel logic-level MOSFET (e.g. IRLZ44N, 2N7000 or AO3400) + 100 kΩ resistor | Digital GPIO | - |
+| **Rotary Encoder KY-040** | Rotary Encoder with integrated push-button for input control | 3x Digital GPIO (internal pull-up) | 3.3 V |
+| **External power supply 3 V** | External DC power adapters for the LED strip and extraction fan (3V) | Power rails / DC jack | 3 V |
 
 ### Pinout & Wiring Plan
-> [!IMPORTANT]
-> The Raspberry Pi Pico W uses **3.3 V logic**. Never connect 5 V or 12 V loads directly to GPIO pins. Always use a driver circuit (MOSFET/transistor) with a shared common ground (GND) across all power sources.
 
 | Pico W Pin | Pin Name / Function | Connected Module & Pin | Notes / Description |
 |---|---|---|---|
-| **GP0 (Pin 1)** | I2C0 SDA | BME280 SDA & SH1106 OLED SDA | Shared I2C0 bus data line (pull-up resistors) |
-| **GP1 (Pin 2)** | I2C0 SCL | BME280 SCL & SH1106 OLED SCL | Shared I2C0 bus clock line |
-| **GP14 (Pin 19)** | GPIO / PWM Output | Fan Driver Gate (MOSFET) | Switched 12 V ventilation fan control |
-| **GP15 (Pin 20)** | GPIO / PWM Output | Light Driver Gate (MOSFET) | Switched 5 V LED strip lighting control |
-| **GP16 (Pin 21)** | GPIO Input | KY-040 Encoder CLK (A) | Direction & step detection (Pull-up) |
-| **GP17 (Pin 22)** | GPIO Input | KY-040 Encoder DT (B) | Direction & step detection (Pull-up) |
-| **GP18 (Pin 24)** | GPIO Input | KY-040 Encoder SW (Switch) | Menu select / mode change button (Pull-up) |
-| **GP20 (Pin 26)** | GPIO / PWM Output | RGB LED - Red Channel | Current limiting resistor ~220 Ω |
-| **GP21 (Pin 27)** | GPIO / PWM Output | RGB LED - Green Channel | Current limiting resistor ~330 Ω |
-| **GP22 (Pin 29)** | GPIO / PWM Output | RGB LED - Blue Channel | Current limiting resistor ~330 Ω |
-| **GP26 (Pin 31)** | ADC0 Analog Input | Photoresistor (LDR) divider | Ambient light level measurement (0–3.3 V) |
-| **3V3 (Pin 36)** | Power Output | 3.3 V Power Rail | Powers BME280, SH1106 OLED, KY-040, and LDR divider |
-| **GND (Pin 38)** | Common Ground | System Ground (GND) | Shared common ground with external 12 V / 5 V power supplies |
+| **GP2** | GPIO Input | Encoder CLK (A) | Direction & step detection (Pull-up) |
+| **GP3** | GPIO Input | Encoder DT (B) | Direction & step detection (Pull-up) |
+| **GP4** | I2C0 SDA | BME280 SDA & SH1106 OLED SDA | Shared I2C0 bus data line (pull-up resistors) |
+| **GP5** | I2C0 SCL | BME280 SCL & SH1106 OLED SCL | Shared I2C0 bus clock line |
+| **GP12** | GPIO Input | Encoder button (SW) | Threshold select button (Pull-up) |
+| **GP14** | GPIO | LED Strip Data | NeoPixel LED strip lighting control |
+| **GP15** | GPIO | Fan Driver Gate (MOSFET) | Switched 3 V ventilation fan control |
+| **GP26** | ADC0 Analog Input | Light Sensor | Ambient light level measurement (0–3.3 V) |
+| **3V3** | Pico Power Output | 3.3 V Power Rail | Powers BME280, SH1106 OLED, KY-040, and Light Sensor |
+| **3V** | External Power Supply | LED Strip and Fan VCC (+3V) | Dedicated external power for the 3 V LED strip lighting and fan |
+| **GND** | Common Ground | System Ground (GND) | Shared common ground for Pico, 3.3 V, 3 V external circuits |
 
 ---
 
-## 🏗️ System Architecture & Design
+## System Architecture & Design
 
 ### Block Diagram
+![Block Diagram](Images/Block_diagram.png)
 
-![block diagram](./presentation/block_diagram.png)
+### Wiring Diagram
+![Wiring Diagram](Images/Wiring.png)
 
 ---
 
-## ⏱️ Timing & Concurrency Plan
+## Timing & Concurrency Plan
 
-To keep the system responsive without blocking user input or display updates, the software employs cooperative multitasking using MicroPython's **`uasyncio`**:
+To achieve a highly responsive user experience (UX), the software abandons blocking `time.sleep()` calls in favor of a **100% non-blocking "superloop"** based on `time.ticks_ms()` paired with **Hardware Interrupts (IRQs)**.
 
-| Task Name | Interval / Trigger | Priority / Type | Responsibility |
+To accommodate the conservative 100 kHz I2C speed without blocking the 100 ms local loop, the OLED display is updated using a "dirty flag" logic (it only redraws when a value physically changes). 
+
+| Task Name | Interval / Trigger | Estimated Duration | Responsibility |
 |---|---|---|---|
-| `task_inputs` | 10–25 ms | High (Async task) | Continuously monitors and debounces rotary encoder (CLK, DT) and button (SW); adjusts menu and threshold values. |
-| `task_sensors` | 500–1000 ms | Medium (Async task) | Reads raw values from BME280 via I2C and ambient light level from LDR via ADC0; validates sensor ranges. |
-| `task_control` | 500 ms | Medium (Async task) | Evaluates climate conditions (fan control with hysteresis) and ambient light (LED strip control). Updates RGB LED indicator. |
-| `task_display` | 150–250 ms | Low/Medium (Async task) | Updates SH1106 OLED frame buffer with current readings, threshold setpoints, and fan/light status icons. |
-| `task_telemetry` | 15–30 s | Background (Optional) | Formats JSON telemetry payload and publishes to MQTT broker via Wi-Fi; handles network reconnects non-blockingly. |
+| `isr_encoder` | On pin change (IRQ) | < 0.1 ms (Microseconds) | Instantly captures rotary encoder rotation (CLK, DT) and button presses (SW) in the background. Sets `display_dirty` flag. |
+| `task_local_update` | Every 100 ms | ~ 10 ms (logic only)<br> ~ 90–110 ms (if OLED redraws) | Reads BME280 and LDR sensors, evaluates hysteresis logic for actuators. If data changed or the encoder was moved, it triggers an OLED redraw. |
+| `task_telemetry` | Every 20 seconds | ~ 1–3 s (Up to 10 s if reconnecting) | Formats environmental data and uploads it to ThingSpeak via Wi-Fi HTTP POST. *(Note: IRQs ensure encoder inputs are never lost during this blocking network request).* |
+
+---
+### Execution Time Breakdown:
+* **Sensors & Logic:** The LDR reading uses a 10-sample averaging algorithm via ADC, taking roughly **0.5 ms**. Reading the BME280 via I2C at 100 kHz takes **~10 ms**. Processing the hysteresis logic is nearly instantaneous.
+* **OLED Display:** Pushing the frame buffer to the SH1106 OLED via I2C at 100 kHz is the heaviest local task, taking **~80 to 100 ms**. To prevent the 100 ms loop from overflowing continuously, the display is only updated when a value changes.
+* **Cloud Telemetry:** Wi-Fi HTTP requests are the main system bottleneck, occupying the processor for **1 to 3 seconds**. Since this only happens every 20 seconds, the local loop maintains a highly responsive user interface.
 
 ---
 
-## 📁 Repository Structure
-
+## Repository Structure
 ```text
-├── docs/                       # Sphinx documentation source files
-│   ├── conf.py                 # Sphinx configuration
-│   ├── index.rst               # Documentation root
-│   └── api/                    # Auto-generated or manual class documentation
-├── src/                        # MicroPython production code
-│   ├── main.py                 # Application entry point & uasyncio task loop
-│   ├── config.py               # Hardware pin definitions & default thresholds
-│   ├── drivers/                # Reusable component driver classes
-│   │   ├── bme280.py           # BME280 I2C driver
-│   │   ├── display.py          # Display abstraction (OLED / Nokia)
-│   │   ├── fan_controller.py   # Fan PWM / digital driver class
-│   │   └── button.py           # Debounced button / input handler class
-│   └── lib/                    # Third-party libraries (if any)
-├── tests/                      # Component unit / isolation test scripts
-│   ├── test_bme280.py          # Standalone sensor test
-│   ├── test_fan.py             # Driver circuit validation test
-│   └── test_display.py         # Display rendering test
-├── presentation/               # Poster and demonstration assets
-│   ├── poster.pdf              # Final A3 project poster
-│   └── video_link.txt          # Link to 1-2 min demonstration video
-├── LICENSE                     # License file (e.g. MIT)
-└── README.md                   # This project report & documentation
+DE2-project
+├─ docs                         # Sphinx documentation source files
+│  ├─ conf.py                   # Sphinx configuration
+│  └─ index.rst                 # Documentation root
+├─ Images                       # Architecture and wiring diagrams
+│  ├─ Block_diagram.png
+│  └─ Wiring.png
+├─ presentation                 # Poster and demonstration assets
+├─ README.md                    # This project report & documentation
+├─ src                          # MicroPython production code
+│  ├─ config.py                 # Wi-Fi credentials, API keys & threshold defaults
+│  ├─ drivers                   # Reusable hardware driver classes
+│  │  ├─ actuator.py            # Fan / general digital actuator control (MOSFET)
+│  │  ├─ bme280.py              # BME280 I2C temp/humidity/pressure sensor wrapper
+│  │  ├─ led_strip.py           # Addressable NeoPixel LED strip controller
+│  │  ├─ light_sensor.py        # LDR ADC voltage reader wrapper
+│  │  ├─ rotary.py              # KY-040 rotary encoder IRQ handler
+│  │  ├─ sh1106.py              # SH1106 OLED display driver and UI wrapper
+│  │  ├─ thingspeak_upload.py   # Wi-Fi connection and HTTP POST telemetry
+│  │  └─ __init__.py            # Python package initialization
+│  └─ main.py                   # Application entry point & non-blocking superloop
+└─ tests                        # Component isolation and hardware test scripts
+   ├─ test_actuators.py         # Validates Fan MOSFET ON/OFF switching
+   ├─ test_bme280.py            # Standalone test for BME280 readings
+   ├─ test_i2c_scan.py          # Scans bus for BME280 and OLED addresses
+   ├─ test_ldr.py               # Raw LDR voltage measurements
+   ├─ test_led_strip.py         # Tests NeoPixel color and brightness control
+   ├─ test_LightControl.py      # Tests automated hysteresis logic (LDR -> NeoPixel)
+   ├─ test_light_sensor.py      # Validates the light_sensor class wrapper
+   ├─ test_oled.py              # Validates UI layout, menu states, and cursors
+   └─ test_tsupload.py          # Verifies Wi-Fi connectivity and cloud upload
 ```
-
 ---
 
-## 🚀 Setup & Installation Instructions
+## Setup & Installation Instructions
 
 ### Prerequisites
 1. **Raspberry Pi Pico W** flashed with the latest MicroPython firmware (v1.22 or newer).
@@ -139,26 +150,31 @@ To keep the system responsive without blocking user input or display updates, th
 
 ---
 
-## 🧪 Testing & Verification
+## Testing & Verification
 
-Document your component verification steps and measured results below:
 
 ### 1. Sensor Verification (BME280)
-- **Measurement Range Tested:** Temp [°C], Humidity [%RH], Pressure [hPa].
-- **Sampling Stability:** Observed sensor noise, calibration offset, and response time when subjected to elevated temperature or humidity.
+- **Module Testing:** Hardware communication and data parsing were successfully verified using the standalone `test_bme280.py` script.
 
 ### 2. Fan Driver & Actuation Test
-- **Driver switching test:** Verified switching voltage with multimeter/oscilloscope.
-- **Hysteresis control:** Fan turns ON when $T > T_{threshold}$ and OFF when $T < T_{threshold} - \Delta T$ to prevent rapid on/off oscillation.
+- **Driver switching test:** Verified switching voltage can be 3 V.
+- **Hysteresis control:** Fan turns ON when $T > T_{threshold}$ OR $RH > RH_{threshold}$, and turns OFF when both $T < T_{threshold} - \Delta T$ AND $RH < RH_{threshold} - \Delta RH$ to prevent rapid on/off oscillation.
 
-### 3. Display Refresh Rate & Responsiveness
+### 3. Automated Light Control (LDR & LED Strip)
+- **Logic & Hysteresis validation:** Verified LDR voltage divider readings via ADC with a 10-sample averaging filter. Confirmed that the NeoPixel LED strip correctly toggles based on ambient light without flickering due to software hysteresis.
+- **Integration test:** Successfully validated hardware response and software logic using a dedicated test script (`test_LightControl.py`).
+
+### 4. OLED Display
 - Verified non-blocking screen updates without stuttering input recognition.
+- **Module Testing:** Verified functionality using `test_oled.py` script.
 
-*(Insert photos, screenshots of serial console, or measurement graphs here)*
+### 5. Cloud Telemetry (ThingSpeak)
+- **Wi-Fi & API Connection:** Verified stable network connection and successful HTTP POST requests using the `test_tsupload.py` script.
+- **Data Integrity:** Confirmed that local environmental data and actuator states (fan/light) are correctly formatted and accurately visualized on the ThingSpeak cloud dashboard.
 
 ---
 
-## 📚 Sphinx Documentation
+## Sphinx Documentation
 
 The project includes Sphinx documentation for all custom driver classes and public APIs.
 
@@ -172,15 +188,16 @@ View the generated output in `docs/_build/html/index.html`.
 
 ---
 
-## 🎥 Presentation & Deliverables
+## Presentation & Deliverables
 
-- **Project Poster (A3):** [Link to Poster PDF](presentation/poster.pdf) *(TODO: Add link)*
-- **Demo Video (1–2 minutes):** [YouTube / Video Link](https://youtube.com/...) *(TODO: Add video URL)*
+- **Project Poster:** [Link to Poster PDF](presentation/poster.pdf)
+- **Demo Video:** [Video Link](https://youtube.com/...)
 
 ---
 
-## 📜 References & Acknowledgments
+## References & Acknowledgments
 
 - MicroPython documentation: [https://docs.micropython.org/](https://docs.micropython.org/)
+- NeoPixel library [https://docs.micropython.org/en/latest/library/neopixel.html#class-neopixel](https://docs.micropython.org/en/latest/library/neopixel.html#class-neopixel)
 - Raspberry Pi Pico W documentation: [https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html)
-- Course lab exercises & inspiration: [BUT FEEC DE2 MicroPython Labs](https://github.com/tomas-fryza/esp-micropython)
+- DE2 Course lab exercises: [BUT FEEC DE2 MicroPython Labs](https://gitlab.fekt.vut.cz/fryza/micropython-course-labs)

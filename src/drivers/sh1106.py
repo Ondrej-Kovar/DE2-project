@@ -1,81 +1,67 @@
 """
-MicroPython SH1106 OLED driver (128x64) via I2C.
-Compatible with standard framebuf API.
+OLED Display Controller for Raspberry Pi Pico.
+Provides a class-based wrapper for the SH1106 OLED (128x64) to format and 
+display environmental data, light hysteresis limits, and actuator states.
 """
+from sh1106 import SH1106_I2C
 
-from machine import I2C
-import framebuf
-
-# Constants
-SET_CONTRAST = 0x81
-SET_NORM_INV = 0xA6
-SET_DISP = 0xAE
-SET_SCAN_DIR = 0xC0
-SET_SEG_REMAP = 0xA0
-LOW_COLUMN_ADDRESS = 0x00
-HIGH_COLUMN_ADDRESS = 0x10
-SET_PAGE_ADDRESS = 0xB0
-
-class SH1106_I2C(framebuf.FrameBuffer):
-    """
-    SH1106 128x64 OLED display driver over I2C bus.
-    Extends MicroPython's built-in framebuf.FrameBuffer.
-    """
-
-    def __init__(self, width: int = 128, height: int = 64, i2c: I2C = None, addr: int = 0x3C, rotate: int = 0):
-        self.width = width
-        self.height = height
+class OLEDDisplay:
+    def __init__(self, i2c, address=0x3C):
+        """Initialize the display using a shared I2C bus."""
         self.i2c = i2c
-        self.addr = addr
-        self.rotate = rotate
-        self.pages = self.height // 8
-        self.buffer = bytearray(self.pages * self.width)
-        super().__init__(self.buffer, self.width, self.height, framebuf.MONO_VLSB)
-        self.init_display()
+        self.address = address
+        self.oled = SH1106_I2C(128, 64, self.i2c, addr=self.address)
 
-    def write_cmd(self, cmd: int):
-        self.i2c.writeto(self.addr, bytearray([0x80, cmd]))
+    def show_data(self, temp, temp_lim, hum, hum_lim, pres, 
+                  light_v, v_low, v_high, fan_on, led_on, 
+                  menu_mode=0, sensor_error=False):
+        """Render all greenhouse metrics, thresholds, and actuator states."""
+        self.oled.fill(0) 
 
-    def write_data(self, buf):
-        self.i2c.writeto(self.addr, b'\x40' + buf)
+        # 1. Header (Menu state)
+        if menu_mode == 1:
+            self.oled.text("SET TEMP LIMIT", 0, 0)
+        elif menu_mode == 2:
+            self.oled.text("SET HUM LIMIT", 0, 0)
+        elif menu_mode == 3:
+            self.oled.text("SET LIGHT LOW", 0, 0)
+        elif menu_mode == 4:
+            self.oled.text("SET LIGHT HIGH", 0, 0)
+        else:
+            self.oled.text("GREENHOUSE MON", 0, 0)
 
-    def init_display(self):
-        for cmd in (
-            SET_DISP | 0x00,           # off
-            0xD5, 0x80,                # clock div
-            0xA8, self.height - 1,     # multiplex
-            0xD3, 0x00,                # display offset
-            0x40,                      # start line 0
-            0xAD, 0x8B,                # charge pump
-            0x33,                      # pump voltage
-            SET_SEG_REMAP | 0x01,      # reverse mapping
-            SET_SCAN_DIR | 0x08,       # reverse scan
-            0xDA, 0x12,                # com pins
-            SET_CONTRAST, 0x80,        # contrast
-            0xD9, 0x22,                # pre-charge
-            0xDB, 0x35,                # vcomh
-            SET_NORM_INV | 0x00,       # normal
-            SET_DISP | 0x01            # turn on
-        ):
-            self.write_cmd(cmd)
-        self.fill(0)
-        self.show()
+        # 2. BME280 Data (Temperature, humidity, pressure)
+        if sensor_error:
+            self.oled.text("BME280 ERROR", 0, 18)
+            self.oled.text("CHECK I2C WIRING", 0, 30)
+        else:
+            # Add dynamic cursor '<' if currently editing the limit
+            t_lim_str = f"{temp_lim:.1f}<" if menu_mode == 1 else f"{temp_lim:.1f}"
+            h_lim_str = f"{hum_lim:.1f}<" if menu_mode == 2 else f"{hum_lim:.1f}"
+            
+            self.oled.text(f"T:{temp:.1f}/{t_lim_str}C", 0, 9)
+            self.oled.text(f"H:{hum:.1f}/{h_lim_str}%", 0, 18)
+            self.oled.text(f"P:{pres:.1f}hPa", 0, 27)
 
-    def show(self):
-        """Send memory frame buffer to OLED display."""
-        for page in range(self.pages):
-            self.write_cmd(SET_PAGE_ADDRESS | page)
-            self.write_cmd(LOW_COLUMN_ADDRESS | 2)     # SH1106 offset is 2 pixels
-            self.write_cmd(HIGH_COLUMN_ADDRESS | 0)
-            page_slice = self.buffer[page * self.width:(page + 1) * self.width]
-            self.write_data(page_slice)
+        # 3. Light Sensor (Current V + V_low and V_high with dynamic cursor)
+        v_low_str = f"{v_low:.1f}<" if menu_mode == 3 else f"{v_low:.1f}"
+        v_high_str = f"{v_high:.1f}<" if menu_mode == 4 else f"{v_high:.1f}"
+        
+        # Max length is exactly 16 characters e.g., "L:1.2V(0.5<-1.0)"
+        self.oled.text(f"L:{light_v:.1f}V({v_low_str}-{v_high_str})", 0, 36)
+        
+        # 4. Actuator states
+        fan_str = "ON" if fan_on else "OFF"
+        led_str = "ON" if led_on else "OFF"
+        self.oled.text(f"FAN:{fan_str} LED:{led_str}", 0, 45)
 
-    def poweroff(self):
-        self.write_cmd(SET_DISP | 0x00)
+        # 5. Footer (Overall system status)
+        status = "BME ERROR" if sensor_error else "SYS OK"
+        self.oled.text(status, 0, 54)
+        
+        self.oled.show() 
 
-    def poweron(self):
-        self.write_cmd(SET_DISP | 0x01)
-
-    def contrast(self, contrast: int):
-        self.write_cmd(SET_CONTRAST)
-        self.write_cmd(contrast & 0xFF)
+    def off(self):
+        """Clears the screen safely."""
+        self.oled.fill(0)
+        self.oled.show()
