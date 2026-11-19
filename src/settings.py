@@ -29,6 +29,9 @@ DEFAULT_TEMP_LIM = 25.0   # °C
 DEFAULT_HUM_LIM = 60.0    # % RH
 TEMP_HYSTERESIS = 1.0     # °C (Fan OFF below T_lim - 1.0)
 HUM_HYSTERESIS = 5.0      # % RH (Fan OFF below RH_lim - 5.0)
+LIGHT_STEP = 5               # % (for rotary encoder adjustment)
+TEMP_STEP = 1                # °C (for rotary encoder adjustment)
+HUM_STEP = 5                 # % RH (for rotary encoder adjustment)
 
 DEFAULT_LIGHT_LOW = 15    # % (LED ON below this)
 DEFAULT_LIGHT_HIGH = 30   # % (LED OFF above this)

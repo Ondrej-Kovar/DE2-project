@@ -63,8 +63,8 @@ def main():
     # Initialize the sensor on pin GP26 (ADC0) with hysteresis thresholds
     sensor = LightSensor(26, v_low=1.5, v_high=2)
     
-    # Initialize the LED strip on pin GP2
-    strip = LEDStrip(2)
+    # Initialize the LED strip on pin GP14
+    strip = LEDStrip(14)
     
     print("Starting automated light control. Press Ctrl+C to stop.")
     

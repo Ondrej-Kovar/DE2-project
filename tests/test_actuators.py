@@ -1,5 +1,5 @@
 """
-Standalone test script for Fan MOSFET driver and RGB status LED.
+Standalone test script for Fan MOSFET driver.
 Compatible with Raspberry Pi Pico / Pico W (MicroPython).
 """
 import time
@@ -10,40 +10,16 @@ for path in ("src", "src/drivers", "."):
     if path not in sys.path:
         sys.path.append(path)
 
-from drivers.actuator import Actuator, RGBIndicator
+from drivers.actuator import Actuator
 
 # Pin assignment (matches config.py)
-PIN_FAN = 14
-PIN_RGB_R = 20
-PIN_RGB_G = 21
-PIN_RGB_B = 22
+PIN_FAN = 15
 
-print("=== Starting Fan Driver and RGB LED Test ===")
+print("=== Starting Fan Driver ===")
 fan = Actuator(PIN_FAN, name="Fan_12V")
-rgb = RGBIndicator(PIN_RGB_R, PIN_RGB_G, PIN_RGB_B)
 
 try:
-    print("\n1. Testing RGB LED sequences...")
-    print(" - Green (OK)...")
-    rgb.ok()
-    time.sleep(1)
-
-    print(" - Yellow/Orange (Warning)...")
-    rgb.warning()
-    time.sleep(1)
-
-    print(" - Red (Alert)...")
-    rgb.alert()
-    time.sleep(1)
-
-    print(" - Blue (Connecting)...")
-    rgb.connecting()
-    time.sleep(1)
-
-    rgb.off()
-    print(" - RGB LED turned OFF.")
-
-    print("\n2. Testing Fan digital switching...")
+    print("\n1. Testing Fan digital switching...")
     print(f" Initial state: {fan}")
 
     print(" - Switching Fan ON for 3 seconds...")
@@ -54,7 +30,7 @@ try:
     print(" - Switching Fan OFF...")
     fan.off()
     print(f" State: {fan} (is_active={fan.is_active})")
-    time.sleep(1)
+    time.sleep(3)
 
     print(" - Testing toggle ON (1.5 seconds)...")
     fan.toggle()
@@ -72,5 +48,4 @@ except KeyboardInterrupt:
 finally:
     # Ensure safe shutdown of all outputs
     fan.off()
-    rgb.off()
     print("All outputs safely turned OFF.")

@@ -21,9 +21,9 @@ try:
     PIN_SW = settings.PIN_ENC_SW
 except (ImportError, AttributeError):
     # Default fallbacks if config is not available on path
-    PIN_CLK = 16
-    PIN_DT = 17
-    PIN_SW = 18
+    PIN_CLK = 2
+    PIN_DT = 3
+    PIN_SW = 12
 
 try:
     from drivers import RotaryEncoder

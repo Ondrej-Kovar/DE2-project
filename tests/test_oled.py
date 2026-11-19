@@ -8,7 +8,7 @@ class OLEDDisplay:
         """Initialize the display using a shared I2C bus."""
         self.i2c = i2c
         self.address = address
-        self.oled = SH1106_I2C(128, 64, self.i2c, addr=self.address)
+        self.oled = SH1106_I2C(i2c)
 
     def show_data(self, temp, temp_lim, hum, hum_lim, pres, 
                   light_v, v_low, v_high, fan_on, led_on, 

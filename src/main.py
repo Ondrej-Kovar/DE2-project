@@ -78,13 +78,13 @@ def main():
             if encoder.is_button_pressed():
                 menu_mode = (menu_mode + 1) % 5
                 if menu_mode == 1:
-                    encoder.set_range(15, 40, int(temp_lim), step=1) #set_range(self, min_val: int, max_val: int, current_val: int = None, step: int = 1):
+                    encoder.set_range(15, 40, int(temp_lim), step=config.TEMP_STEP) #set_range(self, min_val: int, max_val: int, current_val: int = None, step: int = 1):
                 elif menu_mode == 2:
-                    encoder.set_range(20, 95, int(hum_lim), step=1)
+                    encoder.set_range(20, 95, int(hum_lim), step=config.HUM_STEP)
                 elif menu_mode == 3:
-                    encoder.set_range(0, light_sensor.light_high - 5, light_sensor.light_low, step=5) 
+                    encoder.set_range(0, light_sensor.light_high - 5, light_sensor.light_low, step=config.LIGHT_STEP) 
                 elif menu_mode == 4:
-                    encoder.set_range(light_sensor.light_low + 5, 100, light_sensor.light_high, step=5)
+                    encoder.set_range(light_sensor.light_low + 5, 100, light_sensor.light_high, step=config.LIGHT_STEP)
                 # Trigger immediate display refresh
                 last_display_time = time.ticks_add(now, -config.DISPLAY_INTERVAL_MS)
 

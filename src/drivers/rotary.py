@@ -41,7 +41,7 @@ class RotaryEncoder:
 
     def _on_button(self, pin):
         now = time.ticks_ms()
-        if time.ticks_diff(now, self._last_btn_time) > 100: #debounce 100ms
+        if time.ticks_diff(now, self._last_btn_time) > 200: #debounce 200ms
             self._btn_pressed = True
             self._last_btn_time = now
 

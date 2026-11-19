@@ -1,5 +1,5 @@
 """
-Driver classes for actuators (MOSFET-driven digital fan switch) and RGB indicator.
+Driver classes for actuators (MOSFET-driven digital fan switch).
 Compatible with Raspberry Pi Pico (MicroPython).
 """
 
@@ -69,48 +69,4 @@ class Actuator:
         return f"{self.name}(state={'ON' if self._state else 'OFF'})"
 
 
-# Convenient alias
-Fan = Actuator
-
-
-class RGBIndicator:
-    """
-    Reusable abstraction for 3-channel RGB status LED (common cathode or common anode).
-    """
-
-    def __init__(self, r_pin: int, g_pin: int, b_pin: int, common_anode: bool = False):
-        self._r = Pin(r_pin, Pin.OUT)
-        self._g = Pin(g_pin, Pin.OUT)
-        self._b = Pin(b_pin, Pin.OUT)
-        self._invert = common_anode
-        self.off()
-
-    def set_color(self, red: bool, green: bool, blue: bool):
-        """Set individual color channels (True=ON, False=OFF)."""
-        r_val = not red if self._invert else red
-        g_val = not green if self._invert else green
-        b_val = not blue if self._invert else blue
-
-        self._r.value(1 if r_val else 0)
-        self._g.value(1 if g_val else 0)
-        self._b.value(1 if b_val else 0)
-
-    def off(self):
-        """Turn off all LED channels."""
-        self.set_color(False, False, False)
-
-    def ok(self):
-        """Green: normal operating state."""
-        self.set_color(False, True, False)
-
-    def warning(self):
-        """Yellow / Orange (Red + Green): threshold exceeded / active regulation."""
-        self.set_color(True, True, False)
-
-    def alert(self):
-        """Red: critical state or sensor fault."""
-        self.set_color(True, False, False)
-
-    def connecting(self):
-        """Blue: connecting or transmitting."""
-        self.set_color(False, False, True)
+Fan = Actuator  # Alias for backward compatibility with legacy code
