@@ -88,7 +88,7 @@ To accommodate the 100 kHz I2C bus speed without overloading the CPU, sensor rea
 
 | Logical Task | Interval / Trigger | Estimated Duration | Responsibility |
 |---|---|---|---|
-| `RotaryEncoder` IRQs (`_on_rotate`, `_on_button`) | On `CLK` change / `SW` falling edge (IRQ) | < 0.1 ms (Microseconds) | Instantly captures encoder rotation (`CLK`, `DT`) and debounced button presses (`SW`, 100 ms) in the background so inputs are never missed. |
+| `RotaryEncoder` IRQs (`_on_rotate`, `_on_button`) | On `CLK` change / `SW` falling edge (IRQ) | < 0.1 ms (Microseconds) | Captures encoder rotation (`CLK`, `DT`) and debounced button presses (`SW`, 100 ms) in the background so inputs are never missed. |
 | **Input Handling** | Every 10 ms | < 1 ms | Checks the IRQ button flag (`is_button_pressed()`), cycles menu modes (0–4), and applies the active encoder value to thresholds. |
 | **OLED Refresh** | Every 250 ms *(or on button click)* | ~ 80–100 ms | Renders environmental data, thresholds, cursor, and actuator states to the SH1106 display over I2C. |
 | **Sensors & Control** | Every 1000 ms (1 s) | ~ 10–15 ms | Reads BME280 (I2C) and 10-sample averaged LDR (ADC), evaluates hysteresis logic, and updates the MOSFET fan and NeoPixel LED strip (LED writes occur only on state change). |

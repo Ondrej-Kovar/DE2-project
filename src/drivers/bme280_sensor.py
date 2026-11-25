@@ -3,6 +3,10 @@ BME280 environment sensor controller for Raspberry Pi Pico.
 Provides a class-based wrapper to initialize the sensor on a shared I2C bus,
 verifies hardware connection, and retrieves formatted readings.
 Based on bme280_read.py from LAB6 DE2 course
+Author: Adam Koutný
+History:
+2026-11-10 Initialization
+2026-11-19 Verified functionality using test_bme280.py
 """
 from bme280 import BME280
 from machine import I2C, Pin

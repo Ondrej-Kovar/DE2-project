@@ -3,6 +3,12 @@ OLED Display Controller for Raspberry Pi Pico.
 Provides a class-based wrapper for the SH1106 OLED (128x64) to format and
 display environmental data, light hysteresis limits (%), and actuator states.
 Based on oled_display.py from DE2 course lab6
+Author: Adam Koutny
+
+History:
+2026-11-11 Initialization
+2026-11-19 Tested via test_oled.py, wrong I2C input (fixed)
+2026-11-19 Verified functionality via test_oled.py
 """
 from sh1106 import SH1106_I2C
 
