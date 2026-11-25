@@ -5,6 +5,14 @@ Applies software hysteresis and multi-sample averaging to determine the
 required LED strip state without flickering.
 
 Based on optional task including LDR from LAB5 adc_read.py in DE2 course.
+
+Author: Richard Kralovsky
+
+History
+12.11.2026 Init.
+12.11.2026 Tested functionality (test_led_sensor.py + test_LightControl.py)
+16.11.2026 Added method read_percentage for better visual on OLED display
+19.11.2026 Verified integrated functionality in main
 """
 # Vcc -> LDR -> 5 kOhm -> GND (for implementation)
 

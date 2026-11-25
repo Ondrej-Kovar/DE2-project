@@ -12,9 +12,9 @@ Embedded systems term project for the **Digital Electronics 2 (DE2)** course at 
 
 | Name | Responsibilities |
 |---|---|
-| **Adam Koutný** | Block diagram, Wiring diagram, BME sensor, LED display |
+| **Adam Koutný** | Block diagram, Wiring diagram, BME sensor, OLED display |
 | **Ondřej Kovář** | Encoder, Drivers, Main Code, README |
-| **Richard Královský** | Led strip control, Wi-Fi data transmission, Main Code, README |
+| **Richard Královský** | LED strip control, Wi-Fi data transmission, Main Code, README |
 
 ---
 
@@ -88,7 +88,7 @@ To accommodate the 100 kHz I2C bus speed without overloading the CPU, sensor rea
 
 | Logical Task | Interval / Trigger | Estimated Duration | Responsibility |
 |---|---|---|---|
-| `RotaryEncoder` IRQs (`_on_rotate`, `_on_button`) | On `CLK` change / `SW` falling edge (IRQ) | < 0.1 ms (Microseconds) | Captures encoder rotation (`CLK`, `DT`) and debounced button presses (`SW`, 100 ms) in the background so inputs are never missed. |
+| `RotaryEncoder` IRQs (`_on_rotate`, `_on_button`) | On `CLK` change / `SW` falling edge (IRQ) | < 0.1 ms (Microseconds) | Captures encoder rotation (`CLK`, `DT`) and debounced button presses (`SW`, 200 ms) in the background so inputs are never missed. |
 | **Input Handling** | Every 10 ms | < 1 ms | Checks the IRQ button flag (`is_button_pressed()`), cycles menu modes (0–4), and applies the active encoder value to thresholds. |
 | **OLED Refresh** | Every 250 ms *(or on button click)* | ~ 80–100 ms | Renders environmental data, thresholds, cursor, and actuator states to the SH1106 display over I2C. |
 | **Sensors & Control** | Every 1000 ms (1 s) | ~ 10–15 ms | Reads BME280 (I2C) and 10-sample averaged LDR (ADC), evaluates hysteresis logic, and updates the MOSFET fan and NeoPixel LED strip (LED writes occur only on state change). |
@@ -97,7 +97,7 @@ To accommodate the 100 kHz I2C bus speed without overloading the CPU, sensor rea
 ---
 ### Execution Time Breakdown:
 - **Sensors & Logic:** The LDR reading uses 10-sample averaging via ADC (~**0.5 ms**). Reading the BME280 via I2C at 100 kHz takes **~10 ms**. NeoPixel updates (50 LEDs) take **~1.5 ms** and are triggered only when the light state changes.
-- **OLED Display:** Pushing the 128×64 frame buffer to the SH1106 over 100 kHz I2C takes **~80–100 ms**. Running this every 250 ms leaves plenty of headroom for the 20 ms input loop while keeping the UI responsive.
+- **OLED Display:** Pushing the 128×64 frame buffer to the SH1106 over 100 kHz I2C takes **~80–100 ms**. Running this every 250 ms leaves plenty of headroom for the 10 ms input loop while keeping the UI responsive.
 - **Cloud Telemetry:** Wi-Fi HTTP POST requests are the main bottleneck (**1–3 seconds**), but running every 20 seconds (respecting the ThingSpeak 15 s free-tier limit) keeps local operation smooth.
 
 ---
@@ -142,13 +142,21 @@ DE2-project
 ## Setup & Installation Instructions
 
 ### Prerequisites
-1. **Raspberry Pi Pico W** flashed with the latest MicroPython firmware (v1.22 or newer).
+1. **Raspberry Pi Pico W** flashed with the latest MicroPython firmware 
 2. **Thonny IDE** or **Visual Studio Code (with MicroPico extension)** installed on your computer.
+3. **Firmware:** MicroPython **v1.22+** *(tested on RP2040 / Pico W)*
+
+### Libraries & Dependencies
+- **Built-in MicroPython modules:** `machine`, `time`, `neopixel`, `network`, `urequests`
+- **External / Course libraries** *(must be uploaded to `/lib` or root on Pico W)*:
+  - `bme280.py` – BME280 I2C sensor driver
+  - `sh1106.py` – SH1106 128×64 OLED display driver
+  - `wifi_utils.py` – Wi-Fi connection helper (from DE2 course labs)
 
 ### Quick Start
 1. Clone this repository:
    ```bash
-   git clone [https://github.com/Ondrej-Kovar/DE2-project.git](https://github.com/Ondrej-Kovar/DE2-project.git)
+   git clone https://github.com/Ondrej-Kovar/DE2-project.git
    ```
 2. **Configure `src/settings.py` (Required):** Before uploading, open `src/settings.py` and set the following three parameters:
    - `WIFI_SSID`
@@ -183,10 +191,11 @@ DE2-project
 - **Data Integrity:** Confirmed that local environmental data and actuator states (fan/light) are correctly formatted and accurately visualized on the ThingSpeak cloud dashboard.
 
 ### 6. Rotary Encoder & User Input (KY-040)
-- **Module Testing:** Verified CW/CCW quadrature decoding, min/max clamping, dynamic range switching (`set_range()`), and 100 ms IRQ button debouncing using `test_rotary.py`.
+- **Module Testing:** Verified CW/CCW quadrature decoding, min/max clamping, dynamic range switching (`set_range()`), and initial 100 ms (later changed to 200 ms) IRQ button debouncing using `test_rotary.py`.
 
 ### 7. Full System Integration (`main.py`)
-
+- **First integration test:** Button was not debounced enough (occasionally two changes were detected per click) - changed button debouncing to 200 ms
+- **Second integration test:** Everything working properly, putting Pico into sleep/idle state was suggested for lower power consumption
 ---
 
 ## Sphinx Documentation
@@ -212,8 +221,12 @@ View the generated output in `docs/_build/html/index.html`.
 
 ## References & Acknowledgments
 
-- MicroPython documentation: [https://docs.micropython.org/](https://docs.micropython.org/)
-- NeoPixel library [https://docs.micropython.org/en/latest/library/neopixel.html#class-neopixel](https://docs.micropython.org/en/latest/library/neopixel.html#class-neopixel)
 - Raspberry Pi Pico W documentation: [https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html)
-- Rotary Encoder Guide (CZ) [https://navody.dratek.cz/navody-k-produktum/rotacni-enkoder-ky-040.html](https://navody.dratek.cz/navody-k-produktum/rotacni-enkoder-ky-040.html)
+- MicroPython documentation: [https://docs.micropython.org/](https://docs.micropython.org/)
+- `machine` library: [https://docs.micropython.org/en/latest/library/machine.html](https://docs.micropython.org/en/latest/library/machine.html)
+- `time` library: [https://docs.micropython.org/en/latest/library/time.html](https://docs.micropython.org/en/latest/library/time.html)
+- `neopixel` library: [https://docs.micropython.org/en/latest/library/neopixel.html#class-neopixel](https://docs.micropython.org/en/latest/library/neopixel.html#class-neopixel)
+- `network` library: [https://docs.micropython.org/en/latest/library/network.html](https://docs.micropython.org/en/latest/library/network.html)
+- `urequests` library: [https://makeblock-micropython-api.readthedocs.io/en/latest/public_library/Third-party-libraries/urequests.html](https://makeblock-micropython-api.readthedocs.io/en/latest/public_library/Third-party-libraries/urequests.html)
+- Rotary Encoder Guide (CZ): [https://navody.dratek.cz/navody-k-produktum/rotacni-enkoder-ky-040.html](https://navody.dratek.cz/navody-k-produktum/rotacni-enkoder-ky-040.html)
 - DE2 Course lab exercises: [BUT FEEC DE2 MicroPython Labs](https://gitlab.fekt.vut.cz/fryza/micropython-course-labs)

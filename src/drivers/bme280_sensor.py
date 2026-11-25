@@ -7,6 +7,7 @@ Author: Adam Koutný
 History:
 2026-11-10 Initialization
 2026-11-19 Verified functionality using test_bme280.py
+2026-11-19 Verified integrated functionality in main
 """
 from bme280 import BME280
 from machine import I2C, Pin

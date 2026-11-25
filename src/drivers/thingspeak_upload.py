@@ -7,9 +7,15 @@ actuators (fan, light). It also ensures the Wi-Fi connection is active before
 attempting any data transfer.
 
 Based on the 'bme280_telemetry.py' script from the DE2 course.
+
+Author: Richard Kralovsky
+
+History
+16.11.2026 Init.
+16.11.2026 Tested functionality of ThingSpeak upload (test_tsupload.py)
+19.11.2026 Verified integrated functionality in main
 """
 import network
-import time
 import urequests
 import wifi_utils
 

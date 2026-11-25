@@ -2,9 +2,18 @@
 Main application entry point for the Smart Greenhouse System (DE2 Project).
 Runs a non-blocking superloop integrating BME280, LDR, SH1106 OLED,
 KY-040 rotary encoder, MOSFET fan, NeoPixel LED strip, and ThingSpeak telemetry.
+
+Authors: Richard Kralovsky, Ondrej Kovar, Adam Koutny
+
+History
+18.11.2026 Innit.
+19.11.2026 Testing implementation - button was not debounced properly (fixed)
+19.11.2026 Testing impl. - everything OK
+26.11.2026 Tested machine.idle() instead of time.sleep_ms(10) for lower power consumption
+
 """
 import time
-from machine import I2C, Pin
+from machine import I2C, Pin, idle
 
 import settings as config
 from drivers.actuator import Fan
@@ -156,7 +165,7 @@ def main():
                         light_status=1 if last_led_state == 1 else 0,
                     )
 
-            time.sleep_ms(10) #Yield briefly (lab4)
+            time.sleep_ms(10) #Yield briefly (lab4)             possible(?) alternative: idle()
 
     except KeyboardInterrupt:
         print("\nShutting down safely...")
