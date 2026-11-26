@@ -13,8 +13,8 @@ History
 import settings as config
 
 if config.LOW_POWER_MODE:
-    from main_lowpower import main
+    from lowpower import main
 else:
-    from main_fullpower import main
+    from fullpower import main
 
 main()
