@@ -39,15 +39,15 @@ DEFAULT_LIGHT_HIGH = 60   # % (LED OFF above this)
 # Non-blocking Superloop Intervals (ms)
 SENSOR_INTERVAL_MS = 1000     # Read sensors & update actuators every 1 s
 DISPLAY_INTERVAL_MS = 250     # Refresh OLED every 250 ms (snappy encoder UI)
-UPLOAD_INTERVAL_MS = 20_000   # ThingSpeak upload every 20 s (free tier min is 15 s)
+UPLOAD_INTERVAL_MS = 30_000   # ThingSpeak upload every 30 s (free tier min is 15 s)
 
 # Power Mode
-# True  → low-power loop (main_lowpower.py):
+# True  → low-power loop (lowpower.py):
 #          CPU sleeps between display ticks; measure+upload only every
 #          ACTIVE_CYCLE_INTERVAL_MS (default 60 s). ~40–55 mA average.
-# False → full-power loop (main_fullpower.py):
+# False → full-power loop (fullpower.py):
 #          classic superloop with machine.idle(); sensor read every 1 s,
-#          upload every 20 s. ~60–80 mA.
+#          upload every 30 s. ~60–80 mA.
 LOW_POWER_MODE = False
 
 # How often to wake for a full measure+upload cycle in low-power mode (ms).
