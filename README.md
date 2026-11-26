@@ -226,7 +226,7 @@ DE2-project
 ### 7. Full System Integration (`main.py`)
 - **First integration test:** Button was not debounced enough (occasionally two changes were detected per click) - changed button debouncing to 200 ms
 - **Second integration test:** Everything working properly, putting Pico into sleep/idle state was suggested for lower power consumption
-- **Third integration test:** Low power consumption mode was added (`lowpower.py`), former `main.py` was renamed to `fullpower.py`, `main.py` only decides which mode should be used based on `LOW_POWER_MODE` variable in `settings.py`, everything working properly
+- **Third integration test:** Low power consumption mode was added (`lowpower.py`), former `main.py` was renamed to `fullpower.py`, `main.py` only decides which mode should be used based on `LOW_POWER_MODE` variable in `settings.py`, everything working properly, [TS result](Images/ThingSpeak.png)
 
 ---
 

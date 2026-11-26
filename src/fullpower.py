@@ -12,7 +12,7 @@ History
 19.11.2026 Testing implementation - button was not debounced properly (fixed)
 19.11.2026 Testing impl. - everything OK
 26.11.2026 Tested machine.idle() instead of time.sleep_ms(10) for lower power consumption
-26.11.2026 Moved to main_fullpower.py; main.py is now a dispatcher (LOW_POWER_MODE flag)
+26.11.2026 Moved to fullpower.py; main.py is now a dispatcher (LOW_POWER_MODE flag)
 
 """
 import time
