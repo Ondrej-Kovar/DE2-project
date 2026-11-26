@@ -1,6 +1,17 @@
 """
-Driver classes for actuators (MOSFET-driven digital fan switch).
-Compatible with Raspberry Pi Pico (MicroPython).
+File:        actuator.py
+Project:     Smart Greenhouse Monitor (DE2)
+Platform:    Raspberry Pi Pico W (MicroPython)
+Authors:     Ondřej Kovář
+Description: Driver classes for actuators (MOSFET-driven digital fan switch).
+
+
+Changelog:
+    - 2026-11-08: Initial implementaiton.
+    - 2026-11-12: Added set_level() method for compatibility with level-based control.
+    - 2026-11-19: Added is_active property for state checking.
+    - 2026-11-23: Removing set_level() method, as it is not needed for digital actuators.
+    - 2026-11-26: Added file header and documentation updates
 """
 
 from machine import Pin
@@ -50,15 +61,6 @@ class Actuator:
         else:
             self.off()
 
-    def set_level(self, percent: float):
-        """
-        Compatibility fallback for level-based control.
-        Switches ON if percent > 0, otherwise switches OFF.
-        """
-        if percent > 0:
-            self.on()
-        else:
-            self.off()
 
     @property
     def is_active(self) -> bool:

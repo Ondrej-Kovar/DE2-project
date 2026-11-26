@@ -1,5 +1,15 @@
 """
-Rotary encoder driver (KY-040) with integrated push button for MicroPython.
+File:        rotary.py
+Project:     Smart Greenhouse Monitor (DE2)
+Platform:    Raspberry Pi Pico W (MicroPython)
+Author:      Ondřej Kovář
+Description: Rotary encoder driver (KY-040) with integrated push button for MicroPython.
+Changelog:
+    - 2026-11-09: Initial implementation.
+    - 2026-11-12: Added button press detection and debouncing.
+    - 2026-11-19: Debounce interval changes.
+    - 2026-11-26: Added file header and documentation updates.
+
 """
 
 from machine import Pin

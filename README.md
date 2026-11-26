@@ -49,6 +49,7 @@ The **Smart Greenhouse Monitor** is an automated microclimate control and monito
 | **Fan** | 3 V DC ventilation fan | Digital switching via MOSFET | External 3 V DC supply |
 | [**LED Strip NeoPixel WS2812B**](https://www.laskakit.cz/user/related_files/ws2812b.pdf) | Individually addressable RGB LED strip | Digital data (via neopixel library) | External 3 V DC supply |
 | **Fan Driver** | N-channel logic-level MOSFET [STP36NF06L](https://www.st.com/resource/en/datasheet/stb36nf06l.pdf) + 100 kΩ resistor | Digital GPIO | - |
+| [**Fly-back diode**]() | Schottky or fast Si diode | Digital switching via MOSFET | external 3V DC supply |
 | [**Rotary Encoder KY-040**](https://www.handsontec.com/dataspecs/module/Rotary%20Encoder.pdf) | Rotary Encoder with integrated push-button for input control | 3x Digital GPIO (internal pull-up) | 3.3 V |
 | **External power supply 3 V** | External DC power adapters for the LED strip and extraction fan (3V) | Power rails / DC jack | 3 V |
 
