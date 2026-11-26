@@ -15,8 +15,14 @@ from sh1106 import SH1106_I2C
 
 
 class OLEDDisplay:
+    """OLED display controller for the 128x64 SH1106 screen over I2C."""
+
     def __init__(self, i2c, address=0x3C):
-        """Initialize the display using a shared I2C bus."""
+        """Initialize the display using a shared I2C bus.
+
+        :param i2c: Initialized MicroPython ``machine.I2C`` bus instance.
+        :param address: 7-bit I2C address of the SH1106 display (default ``0x3C``).
+        """
         self.i2c = i2c
         self.address = address
         self.oled = SH1106_I2C(i2c)
@@ -24,7 +30,21 @@ class OLEDDisplay:
     def show_data(self, temp, temp_lim, hum, hum_lim, pres,
                   light_pct, light_low, light_high, fan_on, led_on,
                   menu_mode=0, sensor_error=False):
-        """Render all greenhouse metrics, thresholds, and actuator states."""
+        """Render all greenhouse metrics, thresholds, and actuator states.
+
+        :param temp: Measured temperature (°C).
+        :param temp_lim: Active temperature limit (°C).
+        :param hum: Measured relative humidity (% RH).
+        :param hum_lim: Active humidity limit (% RH).
+        :param pres: Measured atmospheric pressure (hPa).
+        :param light_pct: Ambient light level (%).
+        :param light_low: Lower light threshold (%).
+        :param light_high: Upper light threshold (%).
+        :param fan_on: ``True`` if the fan is currently ON.
+        :param led_on: ``True`` if the LED strip is currently ON.
+        :param menu_mode: Active menu index (``0`` = monitor, ``1..4`` = editing).
+        :param sensor_error: ``True`` to show a BME280 wiring/read error banner.
+        """
         self.oled.fill(0)
 
         # 1. Header (Menu state)

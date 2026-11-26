@@ -23,6 +23,15 @@ class RotaryEncoder:
     """
 
     def __init__(self, clk_pin: int, dt_pin: int, sw_pin: int, min_val: int = 0, max_val: int = 100, step: int = 1):
+        """Initialize the rotary encoder pins, limits, and hardware interrupts.
+
+        :param clk_pin: GPIO pin number for the encoder CLK (A) signal.
+        :param dt_pin: GPIO pin number for the encoder DT (B) signal.
+        :param sw_pin: GPIO pin number for the integrated push-button (SW).
+        :param min_val: Minimum allowed encoder value.
+        :param max_val: Maximum allowed encoder value.
+        :param step: Increment/decrement step per detent.
+        """
         self._clk = Pin(clk_pin, Pin.IN, Pin.PULL_UP)
         self._dt = Pin(dt_pin, Pin.IN, Pin.PULL_UP)
         self._sw = Pin(sw_pin, Pin.IN, Pin.PULL_UP)

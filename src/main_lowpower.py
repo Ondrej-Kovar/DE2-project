@@ -56,6 +56,7 @@ ACTIVE_CYCLE_INTERVAL_MS = config.ACTIVE_CYCLE_INTERVAL_MS
 
 
 def main():
+    """Initialize hardware peripherals and run the low-power lightsleep superloop."""
     print("Initializing Smart Greenhouse System (low-power mode)...")
 
     # 1. Shared I2C Bus (BME280 + SH1106 OLED)

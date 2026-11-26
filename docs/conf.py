@@ -18,9 +18,20 @@ extensions = [
     'sphinx.ext.viewcode',
 ]
 
-templates_path = ['_templates']
+# Mock MicroPython / Pico W hardware libraries when building docs on a PC
+autodoc_mock_imports = [
+    'machine',
+    'neopixel',
+    'network',
+    'urequests',
+    'bme280',
+    'sh1106',
+    'wifi_utils',
+]
+
+templates_path = []
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # HTML output options
 html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
+html_static_path = []

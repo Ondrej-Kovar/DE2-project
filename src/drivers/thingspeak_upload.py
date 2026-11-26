@@ -20,9 +20,14 @@ import urequests
 import wifi_utils
 
 class ThingSpeakUpload:
+    """Wi-Fi and ThingSpeak HTTP POST telemetry uploader."""
+
     def __init__(self, api_key, ssid, password):
-        """
-        Initialize the ThingSpeak data uploader.
+        """Initialize the ThingSpeak data uploader.
+
+        :param api_key: ThingSpeak channel Write API key.
+        :param ssid: Wi-Fi network SSID.
+        :param password: Wi-Fi network password.
         """
         self.api_key = api_key
         self.ssid = ssid
@@ -43,9 +48,16 @@ class ThingSpeakUpload:
         return True
 
     def upload_data(self, temperature, humidity, pressure, fan_status, light_status):
-        """
-        Uploads measured data to ThingSpeak.
-        Always verifies Wi-Fi connection before sending.
+        """Upload measured environmental data and actuator states to ThingSpeak.
+
+        Always verifies the Wi-Fi connection before sending.
+
+        :param temperature: Temperature in °C (field1).
+        :param humidity: Relative humidity in % RH (field2).
+        :param pressure: Atmospheric pressure in hPa (field3).
+        :param fan_status: Fan state ``1`` (ON) or ``0`` (OFF) (field4).
+        :param light_status: LED strip state ``1`` (ON) or ``0`` (OFF) (field5).
+        :return: ``True`` if the upload succeeded, ``False`` otherwise.
         """
         if not self._ensure_connection():
             return False # upload is not performed if there is no network connection

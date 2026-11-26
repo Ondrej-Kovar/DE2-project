@@ -29,6 +29,7 @@ from drivers.thingspeak_upload import ThingSpeakUpload
 
 
 def main():
+    """Initialize hardware peripherals and run the full-power non-blocking superloop."""
     print("Initializing Smart Greenhouse System...")
 
     # 1. Shared I2C Bus (BME280 + SH1106 OLED)

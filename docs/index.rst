@@ -25,8 +25,8 @@ Authors:
 Hardware Architecture
 =====================
 - Microcontroller: Raspberry Pi Pico W (RP2040)
-- Sensors: BME280 (I2C), Photoresistor LDR (ADC0)
-- Actuators: 12V Ventilation Fan (MOSFET), 5V LED Strip (MOSFET), Status RGB LED
+- Sensors: BME280 (I2C), Photoresistor LDR (ADC0 / GP26)
+- Actuators: 3 V DC Ventilation Fan (MOSFET), 3 V NeoPixel WS2812B LED Strip
 - Display: 1.3" OLED (SH1106 via I2C)
 - Input: Rotary Encoder (KY-040 with push-button)
 
